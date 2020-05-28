@@ -44,8 +44,6 @@
 	window.addEventListener('message', function(event) {
 	
 	  var data = JSON.parse(event.data);
-	
-	  console.log("Dit is waar ie vandaan komt:"+event.origin);	
 		
 	  if (data.action == 'GET') {
 		var msg = JSON.stringify( {'target': data.target, 'geojson': document.getElementById(data.target).value} );
