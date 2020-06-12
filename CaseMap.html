@@ -28,33 +28,40 @@
 	  <div class="form-group">
         <label>3. Kaart</label>
         <div class="embed-responsive embed-responsive-16by9">
-          <iframe id="MapFrame1" src="ArcGIS.html" name="MapFrame1" class="embed-responsive-item" ></iframe>
+          <iframe id="MapFrame1" src="ArcGIS.html" onload="SendMapInit('GeoJSONText','MapFrame1')" class="embed-responsive-item" ></iframe>
         </div>
       </div>		
     </div>
 
     <script>
 	
+	// Init versturen na (opnieuw) laden iframe
+	function SendMapInit(Source,MapFrame) {
+	  var MapFrame = document.getElementById(MapFrame);
+      MapFrame.contentWindow.postMessage(
+        {
+          type: 'init',
+          name: Source,
+          value: { 'initialValue': document.getElementById(Source).value }
+        },
+        '*'
+      );
+	};	
+	
+	// Map tonen
 	function ShowMap(Source,MapChoice,MapFrame) {
 	  var MapUrl = document.getElementById(MapChoice).value;
 	  var MapFrame = document.getElementById(MapFrame);
 	  MapFrame.src = MapUrl;
 	}
-	
+
+    // Eventhandler voor value change
 	window.addEventListener('message', function(event) {
-	
-	  var data = JSON.parse(event.data);
-		
-	  if (data.action == 'GET') {
-		var msg = JSON.stringify( {'target': data.target, 'geojson': document.getElementById(data.target).value} );
-		var MapFrame = document.getElementById('MapFrame1');
-        MapFrame.contentWindow.postMessage(msg, '*');		
-
-	  } else {
-	    document.getElementById(data.target).value = data.geojson;
+ 	  if (event.data.type == 'valueChange') {
+	    document.getElementById(event.data.name).value = event.data.value;
 	  };
-
     });
+
 	
 	</script>
 

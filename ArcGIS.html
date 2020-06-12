@@ -8,9 +8,9 @@
     />
     <link
       rel="stylesheet"
-      href="https://js.arcgis.com/4.14/esri/themes/light/main.css"
+      href="https://js.arcgis.com/4.15/esri/themes/light/main.css"
     />
-    <script src="https://js.arcgis.com/4.14/"></script>
+    <script src="https://js.arcgis.com/4.15/"></script>
 	<script src="https://unpkg.com/terraformer@1.0.9"></script>
     <script src="https://unpkg.com/terraformer-arcgis-parser@1.0.5"></script>
 
@@ -23,6 +23,22 @@
 	  .esri-sketch__button.esri-icon-undo, .esri-sketch__button.esri-icon-redo { display:none; }
     </style>
     <script>
+	
+	let map;
+    let config;
+    let name;
+    
+    const loadZsConfig = done => {
+      window.addEventListener('message', ev => {
+        if (event.data.type === 'init') {
+          config = event.data.value;
+          name = event.data.name;
+          done();
+        }
+      })
+    }
+
+    const createMap = () => {
 
     require([
     "esri/widgets/Sketch", 
@@ -35,8 +51,7 @@
 	//"esri/geometry/Polygon", //Kan misschien ng weer weg??
 	"esri/Graphic",
 	"esri/geometry/SpatialReference",
-	"esri/geometry/projection",
-	"esri/widgets/Fullscreen"
+	"esri/geometry/projection"//,
 	//"esri/geometry/Extent"
     ], 
 	  function( 
@@ -50,8 +65,7 @@
 	  //Polygon, 
 	  Graphic,
 	  SpatialReference,
-	  projection,
-	  Fullscreen
+	  projection//,
 	  //Extent
 	  ) {
 	    let sketchViewModel;  
@@ -78,12 +92,6 @@
         });
 
         view.ui.add(sketch, "top-right");
-		
-		// Full Screen
-		const fullscreen = new Fullscreen({
-          view: view
-        });
-        view.ui.add(fullscreen, "bottom-right");
 
         view.when(function() {
 
@@ -93,40 +101,34 @@
             layer: graphicsLayer,
             updateOnGraphicClick: false,
             defaultUpdateOptions: {
-              // set the default options for the update operations
-              toggleToolOnClick: false // only reshape operation will be enabled
+            // set the default options for the update operations
+            toggleToolOnClick: false // only reshape operation will be enabled
             }
           });
-
-		  //Eventhandler om GET message op te vangen van parent bedoeld om GeoJSON op de kaart te zetten 
-	      window.addEventListener('message', function(event) {
-	        var data = JSON.parse(event.data);
-		    if (data.geojson) {
-		      JSON.parse(data.geojson).features.forEach(function(element) { 
-		        var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
-			    var featuretje = { geometry: geometrietje };
-			    var graphicje = Graphic.fromJSON(featuretje);
-			    projection.load().then(function(evt) {
-			      graphicje.geometry = projection.project(graphicje.geometry, view.spatialReference);
-                });
-				// Grafische weergave overnemen van sketchViewModel
-				if (element.geometry.type == "Point") { graphicje.symbol = sketchViewModel.pointSymbol; }
-                else if (element.geometry.type == "LineString") { graphicje.symbol = sketchViewModel.polylineSymbol; }
-				else { graphicje.symbol = sketchViewModel.polygonSymbol; };
+		  
+		  //Initial value GeoJSON op kaart zetten  
+          if (config.initialValue) {
+		    JSON.parse(config.initialValue).features.forEach(function(element) { 
+		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
+			  var featuretje = { geometry: geometrietje };
+			  var graphicje = Graphic.fromJSON(featuretje);
+			  projection.load().then(function(evt) {
+			    graphicje.geometry = projection.project(graphicje.geometry, view.spatialReference);
+              });
+			  // Grafische weergave overnemen van sketchViewModel
+			  if (element.geometry.type == "Point") { graphicje.symbol = sketchViewModel.pointSymbol; }
+              else if (element.geometry.type == "LineString") { graphicje.symbol = sketchViewModel.polylineSymbol; }
+			  else { graphicje.symbol = sketchViewModel.polygonSymbol; };
 				
-				//En dan op de kaart zetten
-				graphicsLayer.addMany([graphicje]);
-				
-		      });
-			  // En nu nog even inzoomen op de graphics
-			  view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
-			  view.goTo(graphicsLayer.graphics);
-		    };
-          });			
+			  //En dan op de kaart zetten
+			  graphicsLayer.addMany([graphicje]);
 			
-		  // GeoJSON ophalen van Parent window als kaart wordt geladen
-		  var msg = JSON.stringify( {'action':'GET', 'target': 'GeoJSONText', 'geojson': 'leeg'} );
-          parent.window.postMessage(msg, '*');
+	        });
+		    // En nu nog even inzoomen op de graphics
+		    view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		    view.goTo(graphicsLayer.graphics);
+	      };
+		
 		});
 
 		//Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
@@ -145,13 +147,23 @@
             }
           );
 
-		  var target = 'GeoJSONText'
-          var msg = JSON.stringify( {'target': target, 'geojson': JSON.stringify(FeatureCollection)} );
-
-          parent.window.postMessage(msg, '*');
+          window.top.postMessage({
+            type: 'valueChange',
+            name: name,
+            value: JSON.stringify(FeatureCollection)
+            },
+            '*'
+          );
         });
 	 
   	  });
+	  
+	};
+	  
+	new Promise(loadZsConfig).then(() => {
+	  createMap();
+    });	  
+	  
 	  
     </script>
   </head>
