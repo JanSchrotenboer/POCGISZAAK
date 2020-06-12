@@ -15,7 +15,7 @@
     <script src="https://unpkg.com/terraformer-arcgis-parser@1.0.5"></script>
 
     <style>
-      html, body, #viewDiv { padding: 0; margin: 0; height: 100%; width: 100%; }
+      html, body, #map-container { padding: 0; margin: 0; height: 100%; width: 100%; }
 	  .esri-sketch__section { padding: 0; margin: 0; }
 	  .esri-sketch__feature-count-badge { margin-left: 4px; margin-top: 2px;}  
 	  .esri-sketch__tool-section { border-right: none; }
@@ -64,7 +64,7 @@
         });
 
         const view = new MapView({
-          container: "viewDiv",
+          container: "map-container",
           map: map,
 		  center: [5.9, 53.1],
           zoom: 9
@@ -156,6 +156,6 @@
     </script>
   </head>
   <body>
-    <div id="viewDiv"></div>
+    <div id="map-container">Waiting for init message...</div>
   </body>
 </html>
