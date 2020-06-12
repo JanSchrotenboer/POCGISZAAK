@@ -45,28 +45,22 @@
 	"esri/widgets/Sketch/SketchViewModel",
     "esri/Map",
     "esri/layers/GraphicsLayer",
-	//"esri/layers/GeoJSONLayer",
     "esri/views/MapView",
-	//"esri/geometry/Point", //Kan misschien ng weer weg??
-	//"esri/geometry/Polygon", //Kan misschien ng weer weg??
 	"esri/Graphic",
 	"esri/geometry/SpatialReference",
-	"esri/geometry/projection"//,
-	//"esri/geometry/Extent"
+	"esri/geometry/projection",
+	"esri/widgets/Fullscreen"
     ], 
 	  function( 
 	  Sketch, 
 	  SketchViewModel, 
 	  Map, 
 	  GraphicsLayer,
-	  //GeoJSONLayer,
 	  MapView, 
-	  //Point, 
-	  //Polygon, 
 	  Graphic,
 	  SpatialReference,
-	  projection//,
-	  //Extent
+	  projection,
+	  Fullscreen
 	  ) {
 	    let sketchViewModel;  
 
@@ -92,6 +86,12 @@
         });
 
         view.ui.add(sketch, "top-right");
+		
+		// Full Screen
+		const fullscreen = new Fullscreen({
+          view: view
+        });
+        view.ui.add(fullscreen, "bottom-right");
 
         view.when(function() {
 
