@@ -34,6 +34,7 @@
           config = event.data.value;
           name = event.data.name;
 	  console.log("message"+JSON.stringify(event.data));
+	  console.log("config"+config.initialValue);
           done();
         }
       })
