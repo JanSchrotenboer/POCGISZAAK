@@ -52,7 +52,8 @@
 	  "esri/geometry/projection",
 	  "esri/widgets/Fullscreen",
 	  "esri/WebMap",
-	  "esri/config"
+	  "esri/config",
+	  "esri/widgets/LayerList"
       ], 
 	  function( 
 	  Sketch, 
@@ -65,7 +66,8 @@
 	  projection,
 	  Fullscreen,
 	  WebMap,
-	  esriConfig
+	  esriConfig,
+	   LayerList
 	  ) {
 	    let sketchViewModel;
         let sketch;		
@@ -92,6 +94,14 @@
           map: webmap,
 		  center: [5.9, 53.1],
           zoom: 9
+        });
+	      
+	var layerList = new LayerList({
+          view: view
+          });
+        // Adds widget below other elements in the top left corner of the view
+        view.ui.add(layerList, {
+        position: "top-left"
         });
 
         // full screen en sketch alleen tonen in edit mode
