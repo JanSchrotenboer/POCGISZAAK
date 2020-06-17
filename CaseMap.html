@@ -9,6 +9,43 @@
   </head>
 
   <body>
+  
+    <script>
+	
+	// Init versturen na (opnieuw) laden iframe
+	function SendMapInit(Source,MapFrame) {
+	  var MapFrame = document.getElementById(MapFrame);
+	  var Valuetje;
+      if (document.getElementById(Source).value) {
+        Valuetje = JSON.parse(document.getElementById(Source).value);
+		};
+      MapFrame.contentWindow.postMessage(
+        {
+          type: 'init',
+          name: Source,
+          value: { 'initialValue': Valuetje }
+        },
+        '*'
+      );
+	};	
+	
+	// Map tonen
+	function ShowMap(Source,MapChoice,MapFrame) {
+	  var MapUrl = document.getElementById(MapChoice).value;
+	  var MapFrame = document.getElementById(MapFrame);
+	  MapFrame.src = MapUrl;
+	}
+
+    // Eventhandler voor value change
+	window.addEventListener('message', function(event) {
+ 	  if (event.data.type == 'valueChange') {
+	    document.getElementById(event.data.name).value = event.data.value;
+	  };
+    });
+
+	
+	</script>
+  
     <div class="container">
       <h1>Maplification</h1>
 	  <div class="form-group">
@@ -33,37 +70,7 @@
       </div>		
     </div>
 
-    <script>
-	
-	// Init versturen na (opnieuw) laden iframe
-	function SendMapInit(Source,MapFrame) {
-	  var MapFrame = document.getElementById(MapFrame);
-      MapFrame.contentWindow.postMessage(
-        {
-          type: 'init',
-          name: Source,
-          value: { 'initialValue': document.getElementById(Source).value }
-        },
-        '*'
-      );
-	};	
-	
-	// Map tonen
-	function ShowMap(Source,MapChoice,MapFrame) {
-	  var MapUrl = document.getElementById(MapChoice).value;
-	  var MapFrame = document.getElementById(MapFrame);
-	  MapFrame.src = MapUrl;
-	}
 
-    // Eventhandler voor value change
-	window.addEventListener('message', function(event) {
- 	  if (event.data.type == 'valueChange') {
-	    document.getElementById(event.data.name).value = event.data.value;
-	  };
-    });
-
-	
-	</script>
 
   </body>
 </html>
