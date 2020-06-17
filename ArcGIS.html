@@ -33,8 +33,7 @@
         if (event.data.type === 'init') {
           config = event.data.value;
           name = event.data.name;
-	  console.log("message"+JSON.stringify(event.data));
-	  console.log("config"+config.initialValue);
+		  console.log('message'+JSON.stringify(event.data));
           done();
         }
       })
@@ -42,17 +41,17 @@
 
     const createMap = () => {
 
-    require([
-    "esri/widgets/Sketch", 
-	"esri/widgets/Sketch/SketchViewModel",
-    "esri/Map",
-    "esri/layers/GraphicsLayer",
-    "esri/views/MapView",
-	"esri/Graphic",
-	"esri/geometry/SpatialReference",
-	"esri/geometry/projection",
-	"esri/widgets/Fullscreen"
-    ], 
+      require([
+      "esri/widgets/Sketch", 
+	  "esri/widgets/Sketch/SketchViewModel",
+      "esri/Map",
+      "esri/layers/GraphicsLayer",
+      "esri/views/MapView",
+	  "esri/Graphic",
+	  "esri/geometry/SpatialReference",
+	  "esri/geometry/projection",
+	  "esri/widgets/Fullscreen"
+      ], 
 	  function( 
 	  Sketch, 
 	  SketchViewModel, 
@@ -109,10 +108,8 @@
           });
 		  
 		  //Initial value GeoJSON op kaart zetten  
-	console.log("config voor init2"+config.initialValue);
           if (config.initialValue) {
-		    //JSON.parse(config.initialValue).features.forEach(function(element) { 
-		    config.initialValue.features.forEach(function(element) { 	    
+		    config.initialValue.features.forEach(function(element) { 
 		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
 			  var featuretje = { geometry: geometrietje };
 			  var graphicje = Graphic.fromJSON(featuretje);
