@@ -29,7 +29,7 @@
     let name;
     
     const loadZsConfig = done => {
-	console.log('versie:1');     
+	console.log('versie:2');     
       window.addEventListener('message', ev => {
         if (event.data.type === 'init') {
           config = event.data.value;
@@ -112,7 +112,7 @@
             id: "a857155605604f1e87f8887ac8b60705",  //8444e275037549c1acab02d2626daaee
 	    portal: {
               url: "https://gistest.wetterskipfryslan.nl/portal",
-	      authMode: "immediate",
+	      authMode: "auto",
 	      canSignInIDP: true,
 	      canSignInArcGIS: false   
 	    }
