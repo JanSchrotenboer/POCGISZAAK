@@ -79,20 +79,23 @@
           zoom: 9
         });
 
-        const sketch = new Sketch({
-          layer: graphicsLayer,
-          view: view,
-          // graphic will be selected as soon as it is created
-          creationMode: "update"
-        });
-
-        view.ui.add(sketch, "top-right");
+        // full screen en sketch alleen tonen in edit mode
+        if ( !config.readonly ) {
+		  const sketch = new Sketch({
+            layer: graphicsLayer,
+            view: view,
+            // graphic will be selected as soon as it is created
+            creationMode: "update"
+          });
+   
+          view.ui.add(sketch, "top-right");
 		
-		// Full Screen
-		const fullscreen = new Fullscreen({
-          view: view
-        });
-        view.ui.add(fullscreen, "bottom-right");
+  		  // Full Screen
+		  const fullscreen = new Fullscreen({
+            view: view
+          });
+          view.ui.add(fullscreen, "bottom-right");
+        };
 
         view.when(function() {
 
@@ -133,20 +136,22 @@
 		});
 
 		//Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
-		sketch.on(["create","remove","reshape","update"], function(event) {
-          const FeatureCollection = {
-            type: "FeatureCollection",
-            features: []
-            };
-          FeatureCollection.features = graphicsLayer.graphics.map(
-            ({ attributes, geometry }, index) => {
-              return {
-                id: index,
-                properties: attributes,
-                geometry: Terraformer.ArcGIS.parse(geometry)
+		//Dit hoeft alleen te gebeuren in edit-mode
+		if ( !config.readonly ) {
+		  sketch.on(["create","remove","reshape","update"], function(event) {
+            const FeatureCollection = {
+              type: "FeatureCollection",
+              features: []
               };
-            }
-          );
+            FeatureCollection.features = graphicsLayer.graphics.map(
+              ({ attributes, geometry }, index) => {
+                return {
+                  id: index,
+                  properties: attributes,
+                  geometry: Terraformer.ArcGIS.parse(geometry)
+                };
+              }
+            );
 
           window.top.postMessage({
             type: 'valueChange',
@@ -154,8 +159,9 @@
             value: JSON.stringify(FeatureCollection)
             },
             '*'
-          );
-        });
+            );
+          });
+		};
 	 
   	  });
 	  
