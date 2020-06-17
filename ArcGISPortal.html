@@ -29,11 +29,12 @@
     let name;
     
     const loadZsConfig = done => {
+	console.log('versie:1');     
       window.addEventListener('message', ev => {
         if (event.data.type === 'init') {
           config = event.data.value;
           name = event.data.name;
-		  console.log('message'+JSON.stringify(event.data));
+	  console.log('message'+JSON.stringify(event.data));
           done();
         }
       })
