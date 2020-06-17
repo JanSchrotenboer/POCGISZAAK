@@ -33,6 +33,7 @@
         if (event.data.type === 'init') {
           config = event.data.value;
           name = event.data.name;
+	  console.log('message'+JSON.stringify(event.data));
           done();
         }
       })
