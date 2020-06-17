@@ -109,9 +109,10 @@
           });
 		  
 		  //Initial value GeoJSON op kaart zetten  
-	console.log("config voor init"+config.initialValue);
+	console.log("config voor init2"+config.initialValue);
           if (config.initialValue) {
-		    JSON.parse(config.initialValue).features.forEach(function(element) { 
+		    //JSON.parse(config.initialValue).features.forEach(function(element) { 
+		    config.initialValue.features.forEach(function(element) { 	    
 		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
 			  var featuretje = { geometry: geometrietje };
 			  var graphicje = Graphic.fromJSON(featuretje);
