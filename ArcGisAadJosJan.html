@@ -29,6 +29,7 @@
     let name;
     
     const loadZsConfig = done => {
+      console.log('versie 23');
       window.addEventListener('message', ev => {
         if (event.data.type === 'init') {
           config = event.data.value;
@@ -84,7 +85,13 @@
 	var webmap = new WebMap({
           portalItem: {
             // autocasts as new PortalItem()
-            id: "8f100ffc401a49c398d1d6ca3f9746df"  //8f100ffc401a49c398d1d6ca3f9746df 
+            id: "8f100ffc401a49c398d1d6ca3f9746df",  //8f100ffc401a49c398d1d6ca3f9746df 
+            portal: {
+              url: "https://gistest.wetterskipfryslan.nl/portal",
+	      authMode: "auto",
+	      canSignInIDP: true,
+	      canSignInArcGIS: false   
+	    }
           },
 	  layers: [graphicsLayer]
         });      
