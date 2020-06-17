@@ -63,7 +63,8 @@
 	  projection,
 	  Fullscreen
 	  ) {
-	    let sketchViewModel;  
+	    let sketchViewModel;
+        let sketch;		
 
 	  	const graphicsLayer = new GraphicsLayer();  
 	  
@@ -81,7 +82,7 @@
 
         // full screen en sketch alleen tonen in edit mode
         if ( !config.readonly ) {
-		  const sketch = new Sketch({
+		  sketch = new Sketch({
             layer: graphicsLayer,
             view: view,
             // graphic will be selected as soon as it is created
