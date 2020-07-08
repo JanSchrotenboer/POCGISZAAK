@@ -81,6 +81,9 @@
         });
 
 	esriConfig.portalUrl = "https://gistest.wetterskipfryslan.nl/portal";      
+	
+	console.log('message'+JSON.stringify(config.initialValue.wmsLayers[0].url));      
+	      
 	      
 	var webmap = new WebMap({
           portalItem: {
