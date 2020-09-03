@@ -1,0 +1,118 @@
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<title>Maplification ZaaksysteemNL </title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+  </head>
+
+  <body>
+  
+    <script>
+	
+	// Init versturen na (opnieuw) laden iframe
+	function SendMapInit(Source,MapFrame) {
+	  var MapFrame = document.getElementById(MapFrame);
+	  var Valuetje;
+      if (document.getElementById(Source).value) {
+        Valuetje = JSON.parse(document.getElementById(Source).value);
+		};
+      MapFrame.contentWindow.postMessage(
+        {
+          type: 'init',
+          name: Source,
+          version: 3,
+          value: { 'initialValue': Valuetje }
+        },
+        '*'
+      );
+	};	
+	
+	// Map tonen
+	function ShowMap(Source,MapChoice,MapFrame) {
+	  var MapUrl = 'ArcGisV3.html';
+	  var MapFrame = document.getElementById(MapFrame);
+	  MapFrame.src = MapUrl;
+	}
+
+    // Eventhandler voor value change
+	window.addEventListener('message', function(event) {
+ 	  if (event.data.type == 'featureChange') {
+	    document.getElementById(event.data.name).value = event.data.value;
+	  };
+    });
+	
+	// SetMarker
+	function SetMarker(SourceLatLon,MapFrame) {
+      var MapFrame = document.getElementById(MapFrame);
+	  var LatLonnie = document.getElementById(SourceLatLon);
+      MapFrame.contentWindow.postMessage(
+	    {
+  		  type: 'setMarker',
+          name: SourceLatLon,
+          version: 3,
+          value: [LatLonnie.value]
+        },
+        '*'
+      ); 
+	}
+
+	// Map tonen
+	function SetFeature(SourceFeature,MapFrame) {
+      var MapFrame = document.getElementById(MapFrame);
+	  var Valuetje;
+      if (document.getElementById(SourceFeature).value) {
+        Valuetje = JSON.parse(document.getElementById(SourceFeature).value);
+		};
+      MapFrame.contentWindow.postMessage(
+        {
+          type: 'setFeature',
+          name: SourceFeature,
+          version: 3,
+          value: { 'initialValue': Valuetje }
+        },
+        '*'
+      ); 
+	}
+
+	
+	</script>
+  
+    <div class="container">
+      <h1>Maplification</h1>
+	  <div class="form-group">
+        <label for="GeoJSONText">1. GeoJSON</label>
+	    <textarea id="GeoJSONText" class="form-control" name="GeoJSONText" placeholder="Gooi maar in die GeoJSON" rows="8"></textarea>
+      </div>
+	  <div class="form-group">
+	    <input type="button" name="ButtonShowMap" onclick="ShowMap('GeoJSONText', 'MapChoice', 'MapFrame1')" value="TOON GEOJSON OP KAART" class="btn btn-primary btn-block">
+      </div>
+	  <div class="form-group">
+        <label>3. Kaart</label>
+        <div class="embed-responsive embed-responsive-16by9">
+          <iframe id="MapFrame1" src="ArcGisV3.html" onload="SendMapInit('GeoJSONText','MapFrame1')" class="embed-responsive-item" ></iframe>
+        </div>
+      </div>
+	  <div class="form-group">
+        <label for="GeoJSONFeature">GeoJSONFeature</label>
+	    <textarea id="GeoJSONFeature" class="form-control" name="GeoJSONFeature" placeholder="Hier kun je GeoJSON neerzetten om als Feature te sturen naar de kaart" rows="8"></textarea>
+      </div>
+	  <div class="form-group">
+	    <input type="button" name="ButtonSetFeature" onclick="SetFeature('GeoJSONFeature', 'MapFrame1')" value="STUUR FEATURE" class="btn btn-primary btn-block">
+      </div>
+	  <div class="form-group">
+        <label for="LatLon">Marker</label>
+	    <textarea id="LatLon" class="form-control" name="LatLon" placeholder="LatLon" rows="1"></textarea>
+      </div>
+	  <div class="form-group">
+	    <input type="button" name="ButtonSetMarker" onclick="SetMarker('LatLon', 'MapFrame1')" value="PLAATS MARKER" class="btn btn-primary btn-block">
+      </div>
+  
+    </div>
+
+
+
+  </body>
+</html>

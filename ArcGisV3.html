@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.15/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.15/"></script>
+	<script src="https://unpkg.com/terraformer@1.0.9"></script>
+    <script src="https://unpkg.com/terraformer-arcgis-parser@1.0.5"></script>
+
+    <style>
+      html, body, #map-container { padding: 0; margin: 0; height: 100%; width: 100%; }
+	  .esri-sketch__section { padding: 0; margin: 0; }
+	  .esri-sketch__feature-count-badge { margin-left: 4px; margin-top: 2px;}  
+	  .esri-sketch__tool-section { border-right: none; }
+      .esri-sketch__section { padding: none; margin: none; }
+	  .esri-sketch__button.esri-icon-undo, .esri-sketch__button.esri-icon-redo { display:none; }
+    </style>
+    <script>
+	
+	let map;
+    let config;
+    let name;
+    
+    const loadZsConfig = done => {
+      window.addEventListener('message', ev => {
+        if (event.data.type === 'init') {
+          config = event.data.value;
+          name = event.data.name;
+		  console.log('message init:'+JSON.stringify(event.data));
+          done();
+        }
+		else
+		{
+		  console.log('message niet init:'+JSON.stringify(event.data));
+		}
+      })
+    }
+
+    const createMap = () => {
+
+      require([
+      "esri/widgets/Sketch", 
+	  "esri/widgets/Sketch/SketchViewModel",
+      "esri/Map",
+      "esri/layers/GraphicsLayer",
+      "esri/views/MapView",
+	  "esri/Graphic",
+	  "esri/geometry/SpatialReference",
+	  "esri/geometry/projection",
+	  "esri/widgets/Fullscreen"
+      ], 
+	  function( 
+	  Sketch, 
+	  SketchViewModel, 
+	  Map, 
+	  GraphicsLayer,
+	  MapView, 
+	  Graphic,
+	  SpatialReference,
+	  projection,
+	  Fullscreen
+	  ) {
+	    let sketchViewModel;
+        let sketch;		
+
+	  	const graphicsLayer = new GraphicsLayer();  
+	  
+        const map = new Map({
+          basemap: "streets",
+          layers: [graphicsLayer]
+        });
+
+        const view = new MapView({
+          container: "map-container",
+          map: map,
+		  center: [5.9, 53.1],
+          zoom: 9
+        });
+
+        // full screen en sketch alleen tonen in edit mode
+        if ( !config.readonly ) {
+		  sketch = new Sketch({
+            layer: graphicsLayer,
+            view: view,
+            // graphic will be selected as soon as it is created
+            creationMode: "update"
+          });
+   
+          view.ui.add(sketch, "top-right");
+		
+  		  // Full Screen
+		  const fullscreen = new Fullscreen({
+            view: view
+          });
+          view.ui.add(fullscreen, "bottom-right");
+        };
+
+        view.when(function() {
+
+          // Create a new instance of sketchViewModel
+          sketchViewModel = new SketchViewModel({
+            view: view,
+            layer: graphicsLayer,
+            updateOnGraphicClick: false,
+            defaultUpdateOptions: {
+            // set the default options for the update operations
+            toggleToolOnClick: false // only reshape operation will be enabled
+            }
+          });
+		  
+		  //Initial value GeoJSON op kaart zetten  
+          if (config.initialValue) {
+		    config.initialValue.features.forEach(function(element) { 
+		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
+			  var featuretje = { geometry: geometrietje };
+			  var graphicje = Graphic.fromJSON(featuretje);
+			  projection.load().then(function(evt) {
+			    graphicje.geometry = projection.project(graphicje.geometry, view.spatialReference);
+              });
+			  // Grafische weergave overnemen van sketchViewModel
+			  if (element.geometry.type == "Point") { graphicje.symbol = sketchViewModel.pointSymbol; }
+              else if (element.geometry.type == "LineString") { graphicje.symbol = sketchViewModel.polylineSymbol; }
+			  else { graphicje.symbol = sketchViewModel.polygonSymbol; };
+				
+			  //En dan op de kaart zetten
+			  graphicsLayer.addMany([graphicje]);
+			
+	        });
+		    // En nu nog even inzoomen op de graphics
+		    view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		    view.goTo(graphicsLayer.graphics);
+	      };
+		
+		});
+
+		//Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
+		//Dit hoeft alleen te gebeuren in edit-mode
+		if ( !config.readonly ) {
+		  sketch.on(["create","remove","reshape","update"], function(event) {
+            const FeatureCollection = {
+              type: "FeatureCollection",
+              features: []
+              };
+            FeatureCollection.features = graphicsLayer.graphics.map(
+              ({ attributes, geometry }, index) => {
+                return {
+                  id: index,
+                  properties: attributes,
+		  type: "Feature",
+                  geometry: Terraformer.ArcGIS.parse(geometry)
+                };
+              }
+            );
+
+          window.top.postMessage({
+            type: 'featureChange',
+            name: name,
+			version: 3,
+            value: JSON.stringify(FeatureCollection)
+            },
+            '*'
+            );
+          });
+		};
+	 
+  	  });
+	  
+	};
+	  
+	new Promise(loadZsConfig).then(() => {
+	  createMap();
+    });	  
+	  
+	  
+    </script>
+  </head>
+  <body>
+    <div id="map-container"></div>
+  </body>
+</html>
