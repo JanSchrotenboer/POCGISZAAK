@@ -8,9 +8,9 @@
     />
     <link
       rel="stylesheet"
-      href="https://js.arcgis.com/4.15/esri/themes/light/main.css"
+      href="https://js.arcgis.com/4.16/esri/themes/light/main.css"
     />
-    <script src="https://js.arcgis.com/4.15/"></script>
+    <script src="https://js.arcgis.com/4.16/"></script>
 	<script src="https://unpkg.com/terraformer@1.0.9"></script>
     <script src="https://unpkg.com/terraformer-arcgis-parser@1.0.5"></script>
 
@@ -24,36 +24,35 @@
     </style>
     <script>
 	
+	let WFPointSymbol = { type: "simple-marker", style: "circle", color: [ 255,255, 255, 0.7 ],  size: "12px",  outline: {  color: "red", width: 2 } };
+	let WFFillSymbol = { type: "simple-fill",  color: [ 255,255, 255, 0.7 ], style: "solid", outline: {  color: "red",  width: 2 }};
+	let WFLineSymbol = { type: "simple-line",  color: "red", width: 2, style: "solid"};
 	let map;
     let config;
     let name;
-    
+	
     const loadZsConfig = done => {
-      window.addEventListener('message', ev => {
+      window.addEventListener('message', event => {
         if (event.data.type === 'init') {
           config = event.data.value;
           name = event.data.name;
 		  console.log('message init:'+JSON.stringify(event.data));
           done();
         }
-		else
-		{
-		  console.log('message niet init:'+JSON.stringify(event.data));
-		}
       })
     }
 
     const createMap = () => {
-
       require([
       "esri/widgets/Sketch", 
 	  "esri/widgets/Sketch/SketchViewModel",
       "esri/Map",
       "esri/layers/GraphicsLayer",
+	  "esri/layers/FeatureLayer",
       "esri/views/MapView",
+	  "esri/views/draw/Draw",
 	  "esri/Graphic",
 	  "esri/geometry/SpatialReference",
-	  "esri/geometry/projection",
 	  "esri/widgets/Fullscreen"
       ], 
 	  function( 
@@ -61,21 +60,18 @@
 	  SketchViewModel, 
 	  Map, 
 	  GraphicsLayer,
+	  FeatureLayer,
 	  MapView, 
+	  Draw,
 	  Graphic,
 	  SpatialReference,
-	  projection,
 	  Fullscreen
 	  ) {
 	    let sketchViewModel;
-        let sketch;		
-
-	  	const graphicsLayer = new GraphicsLayer();  
+        let sketch;
+        let graphicsLayer;		
 	  
-        const map = new Map({
-          basemap: "streets",
-          layers: [graphicsLayer]
-        });
+        const map = new Map({ basemap: "topo-vector"});
 
         const view = new MapView({
           container: "map-container",
@@ -83,66 +79,73 @@
 		  center: [5.9, 53.1],
           zoom: 9
         });
+		
+		////////////////////////////// EMPTY LAYERS EN TEKENLAAG TOEVOEGEN //////////////////////////////
+		
+		function DefineFeatureLayer (Title,GeometryType) {
+          var LayerDef = new FeatureLayer({
+            title: Title,
+            objectIdField: "ObjectID",
+            geometryType: GeometryType,
+            spatialReference: { wkid: 4326 },
+            source: [], // adding an empty feature collection
+			renderer: {
+              type: "simple",
+              symbol: (GeometryType === 'point') ? WFPointSymbol : (GeometryType === 'polyline') ? WFLineSymbol : WFFillSymbol
+			},
+            popupTemplate: {
+              title: "{Name} <br/><a href=\"https://www.w3schools.com?{Name}\">Link naar zaak</a>"
+              }
+            });
+		  return LayerDef;
+		}
+		
+		const LayerZaakVlak = DefineFeatureLayer ('Objecten','polygon');
+		map.add(LayerZaakVlak);
+		const LayerZaakPunt = DefineFeatureLayer ('Objecten','point');
+		map.add(LayerZaakPunt);		
+		const LayerZaakLijn = DefineFeatureLayer ('Objecten','polyline');
+		map.add(LayerZaakLijn);	
+		
+		// Tekenlaag toevoegen
+		graphicsLayer = new GraphicsLayer();  
+		map.add(graphicsLayer, 0);		
+		
+		////////////////FEATURE TEKENCOMONENT TOEVOEGEN EN FULL SCREEN /////////////////////
 
         // full screen en sketch alleen tonen in edit mode
-        if ( !config.readonly ) {
+        if ( config.canDrawFeatures ) {
+
+  		  // Full Screen
+		  const fullscreen = new Fullscreen({
+            view: view
+          });
+          view.ui.add(fullscreen, "bottom-right");
+		
+
+		  // Tekentool toevoegen 
 		  sketch = new Sketch({
             layer: graphicsLayer,
             view: view,
             // graphic will be selected as soon as it is created
             creationMode: "update"
           });
-   
           view.ui.add(sketch, "top-right");
-		
-  		  // Full Screen
-		  const fullscreen = new Fullscreen({
-            view: view
-          });
-          view.ui.add(fullscreen, "bottom-right");
-        };
-
-        view.when(function() {
-
+  
           // Create a new instance of sketchViewModel
-          sketchViewModel = new SketchViewModel({
-            view: view,
-            layer: graphicsLayer,
-            updateOnGraphicClick: false,
-            defaultUpdateOptions: {
-            // set the default options for the update operations
-            toggleToolOnClick: false // only reshape operation will be enabled
-            }
-          });
-		  
-		  //Initial value GeoJSON op kaart zetten  
-          if (config.initialValue) {
-		    config.initialValue.features.forEach(function(element) { 
-		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
-			  var featuretje = { geometry: geometrietje };
-			  var graphicje = Graphic.fromJSON(featuretje);
-			  projection.load().then(function(evt) {
-			    graphicje.geometry = projection.project(graphicje.geometry, view.spatialReference);
-              });
-			  // Grafische weergave overnemen van sketchViewModel
-			  if (element.geometry.type == "Point") { graphicje.symbol = sketchViewModel.pointSymbol; }
-              else if (element.geometry.type == "LineString") { graphicje.symbol = sketchViewModel.polylineSymbol; }
-			  else { graphicje.symbol = sketchViewModel.polygonSymbol; };
-				
-			  //En dan op de kaart zetten
-			  graphicsLayer.addMany([graphicje]);
-			
-	        });
-		    // En nu nog even inzoomen op de graphics
-		    view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
-		    view.goTo(graphicsLayer.graphics);
-	      };
-		
-		});
+          view.when(function() {
+            sketchViewModel = new SketchViewModel({
+              view: view,
+              layer: graphicsLayer,
+              updateOnGraphicClick: false,
+              defaultUpdateOptions: {
+                // set the default options for the update operations
+                toggleToolOnClick: false // only reshape operation will be enabled
+			  }
+            });
+		  });
 
-		//Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
-		//Dit hoeft alleen te gebeuren in edit-mode
-		if ( !config.readonly ) {
+		  //Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
 		  sketch.on(["create","remove","reshape","update"], function(event) {
             const FeatureCollection = {
               type: "FeatureCollection",
@@ -153,22 +156,151 @@
                 return {
                   id: index,
                   properties: attributes,
-		  type: "Feature",
+		          type: "Feature",
                   geometry: Terraformer.ArcGIS.parse(geometry)
                 };
               }
             );
-
-          window.top.postMessage({
-            type: 'featureChange',
-            name: name,
-			version: 3,
-            value: JSON.stringify(FeatureCollection)
-            },
-            '*'
+            window.top.postMessage({
+              type: 'featureChange',
+              name: name,
+			  version: 3,
+              value: JSON.stringify(FeatureCollection)
+              },
+              '*'
             );
           });
+		  
+		  // zorgen dat objecten altijd gelijk getoond worden
+		  graphicsLayer.graphics.on(["before-add"], function(event) {
+			if (event.item.geometry.rings !== undefined) { event.item.symbol = WFFillSymbol; }
+			else if ( event.item.geometry.paths !== undefined) { event.item.symbol = WFLineSymbol; }
+            else { event.item.symbol = WFPointSymbol; }
+          });
 		};
+
+        /////////////////////INTITIELE WAARDE OP DE KAART ZETTEN ///////////////////////////		
+
+		//Initial value GeoJSON op kaart zetten  
+		if (config.initialFeature) {
+		  view.when(function() {
+		    config.initialFeature.features.forEach(function(element) { 
+		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
+			  var featuretje = { geometry: geometrietje };
+			  var graphicje = Graphic.fromJSON(featuretje);
+			  if (element.geometry.type == "Point") { graphicje.symbol = WFPointSymbol; }
+              else if (element.geometry.type == "LineString") { graphicje.symbol = WFLineSymbol; }
+			  else { graphicje.symbol = WFFillSymbol; };
+			  graphicsLayer.addMany([graphicje]);
+ 	        });
+		    // En nu nog even inzoomen op de graphics
+		    view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		    view.goTo(graphicsLayer.graphics);
+	      });
+		};
+		
+		/////////////////////////////////SET FEATURE ///////////////////////////////////////
+		
+		// Toevoegen features aan layer
+        function applyEditsToLayer(edits,layertje) {
+          layertje
+            .applyEdits(edits)
+            .catch(function (error) {
+              console.log(error);
+            });
+        }
+
+ 		function addFeaturesToLayer (geoJSONFeatures) {
+		  var graphicspunt = [];
+		  var graphicslijn = [];
+		  var graphicsvlak = [];
+		  var graphicszoom = [];
+		  if (geoJSONFeatures !== undefined ) {
+		    geoJSONFeatures.features.forEach(function(element) { 
+		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
+			  var featuretje = { geometry: geometrietje };
+			  var graphicje = Graphic.fromJSON(featuretje);
+			  graphicszoom.push (graphicje);
+			  if (element.geometry.type == "Point") { graphicje.symbol = WFPointSymbol;  graphicspunt.push(graphicje);}
+              else if (element.geometry.type == "LineString") { graphicje.symbol = WFLineSymbol; graphicslijn.push(graphicje);}
+			  else { graphicje.symbol = WFFillSymbol; graphicsvlak.push(graphicje);};
+			  // Properties toevoegen
+			  graphicje.attributes = element.properties;
+	        });
+		
+		    // addEdits object tells applyEdits that you want to add the features
+            const addEditsLijn = { addFeatures: graphicslijn };
+            const addEditsVlak = { addFeatures: graphicsvlak };
+            const addEditsPunt = { addFeatures: graphicspunt };	
+
+            // apply the edits to the layer
+            applyEditsToLayer(addEditsLijn,LayerZaakLijn);
+            applyEditsToLayer(addEditsVlak,LayerZaakVlak);
+            applyEditsToLayer(addEditsPunt,LayerZaakPunt);
+			
+			// En nu nog even inzoomen op de graphics
+			// Als er meer graphics achter elkaar toegevoegd worden is dit ongewenst, vandaar uitgeschakeld
+		    //view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		    //view.goTo(graphicszoom);
+          }			
+        }
+
+        // Listener for setFeature
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'setFeature') {
+            const feature = event.data.value;
+			//console.log('hier komt de setFeature: '+JSON.stringify(event.data.value));
+			addFeaturesToLayer (event.data.value)
+          }
+        });
+		
+		/////////////////////////////////// CLICK /////////////////////////////////////////
+		
+		if ( !config.canDrawFeatures ) {
+		  view.on(["pointer-down"], function(evt) {
+		    // Zet 'm ook gelijk op de kaart, eerst weggehaald
+			//setMarker({ geometry: view.toMap({ x: evt.x, y: evt.y }) })
+			
+			// en dan omzetten naar juiste projectie en versturen
+			var graphicje = Terraformer.ArcGIS.parse(view.toMap({ x: evt.x, y: evt.y }));
+			window.top.postMessage({
+              type: 'click',
+              name: name,
+			  version: 3,
+              value: graphicje.coordinates
+              },
+              '*'
+            );
+          });
+        };
+	
+		/////////////////////////////////// SET MARKER ////////////////////////////////////
+
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'setMarker' && event.data.value) {
+			console.log('hier komt de Marker: '+JSON.stringify(event.data.value));
+			setMarker(Terraformer.ArcGIS.convert ({"type":"Point","coordinates":event.data.value}));
+          } else if (event.data.type === 'setMarker') {
+		      view.graphics.removeAll();
+		  }
+        });
+
+        function setMarker(GeometryJson){
+          view.graphics.removeAll();
+		  var GraphicJson = { geometry: GeometryJson };
+		  var GraphicMarker = Graphic.fromJSON(GraphicJson);
+		  GraphicMarker.symbol = WFPointSymbol;
+		  view.graphics.removeAll();
+		  view.graphics.add(GraphicMarker);
+		  console.log('Dit is de Graphic vd Marker: '+JSON.stringify(GraphicMarker));
+		  //view.goTo(GraphicMarker);
+		  view.goTo({target:GraphicMarker.geometry, zoom: 15}, { duration: 800 });
+        }
+        
+		///////////////////////////// EN NOG WAT GRAFISCHE DINGEN ////////////////////////////////////
+		
+		//kruis ipv pointer op de map
+		document.getElementById("map-container").style.cursor = "crosshair";
 	 
   	  });
 	  
@@ -177,8 +309,7 @@
 	new Promise(loadZsConfig).then(() => {
 	  createMap();
     });	  
-	  
-	  
+
     </script>
   </head>
   <body>

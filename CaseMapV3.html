@@ -13,18 +13,22 @@
     <script>
 	
 	// Init versturen na (opnieuw) laden iframe
-	function SendMapInit(Source,MapFrame) {
+	function SendMapInit(SourceDraw,SourceMarker,MapFrame) {
 	  var MapFrame = document.getElementById(MapFrame);
+	  var Bronnetje;
+	  if (document.getElementById("drawcheck").checked) { Bronnetje = SourceDraw; } else { Bronnetje = SourceMarker };
 	  var Valuetje;
-      if (document.getElementById(Source).value) {
-        Valuetje = JSON.parse(document.getElementById(Source).value);
+      if (document.getElementById(SourceDraw).value) {
+        Valuetje = JSON.parse(document.getElementById(SourceDraw).value);
 		};
       MapFrame.contentWindow.postMessage(
         {
           type: 'init',
-          name: Source,
+          name: Bronnetje,
           version: 3,
-          value: { 'initialValue': Valuetje }
+          value: { 'initialFeature': Valuetje,
+		           canDrawFeatures: document.getElementById("drawcheck").checked 
+                   }
         },
         '*'
       );
@@ -39,8 +43,11 @@
 
     // Eventhandler voor value change
 	window.addEventListener('message', function(event) {
- 	  if (event.data.type == 'featureChange') {
+ 	  if (event.data.type == 'featureChange' || event.data.type == 'click') {
 	    document.getElementById(event.data.name).value = event.data.value;
+		if (event.data.type == 'click') {
+		  SetMarker('LatLon', 'MapFrame1');
+		}
 	  };
     });
 	
@@ -53,7 +60,7 @@
   		  type: 'setMarker',
           name: SourceLatLon,
           version: 3,
-          value: [LatLonnie.value]
+          value: JSON.parse('['+LatLonnie.value+']')
         },
         '*'
       ); 
@@ -71,7 +78,7 @@
           type: 'setFeature',
           name: SourceFeature,
           version: 3,
-          value: { 'initialValue': Valuetje }
+          value: Valuetje
         },
         '*'
       ); 
@@ -83,6 +90,12 @@
     <div class="container">
       <h1>Maplification</h1>
 	  <div class="form-group">
+        <input type="checkbox" id="drawcheck" name="drawcheck" value="Tekenen" checked>
+        <label for="draw">Tekenen op kaart</label>
+	  </div>
+	  
+	  
+	  <div class="form-group">
         <label for="GeoJSONText">1. GeoJSON</label>
 	    <textarea id="GeoJSONText" class="form-control" name="GeoJSONText" placeholder="Gooi maar in die GeoJSON" rows="8"></textarea>
       </div>
@@ -92,7 +105,7 @@
 	  <div class="form-group">
         <label>3. Kaart</label>
         <div class="embed-responsive embed-responsive-16by9">
-          <iframe id="MapFrame1" src="ArcGisV3.html" onload="SendMapInit('GeoJSONText','MapFrame1')" class="embed-responsive-item" ></iframe>
+          <iframe id="MapFrame1" src="ArcGisV3.html" onload="SendMapInit('GeoJSONText','LatLon', 'MapFrame1')" class="embed-responsive-item" ></iframe>
         </div>
       </div>
 	  <div class="form-group">
