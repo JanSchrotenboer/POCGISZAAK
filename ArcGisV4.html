@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.16/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.16/"></script>
+	<script src="https://unpkg.com/terraformer@1.0.9"></script>
+    <script src="https://unpkg.com/terraformer-arcgis-parser@1.0.5"></script>
+
+    <style>
+      html, body, #map-container { padding: 0; margin: 0; height: 100%; width: 100%; }
+	  .esri-sketch__section { padding: 0; margin: 0; }
+	  .esri-sketch__feature-count-badge { margin-left: 4px; margin-top: 2px;}  
+	  .esri-sketch__tool-section { border-right: none; }
+      .esri-sketch__section { padding: none; margin: none; }
+	  .esri-sketch__button.esri-icon-undo, .esri-sketch__button.esri-icon-redo { display:none; }
+    </style>
+    <script>
+	
+	let WFPointSymbol = { type: "simple-marker", style: "circle", color: [ 255,255, 255, 0.7 ],  size: "12px",  outline: {  color: "red", width: 2 } };
+	let WFFillSymbol = { type: "simple-fill",  color: [ 255,255, 255, 0.7 ], style: "solid", outline: {  color: "red",  width: 2 }};
+	let WFLineSymbol = { type: "simple-line",  color: "red", width: 2, style: "solid"};
+	let map;
+    let config;
+    let name;
+	
+    const loadZsConfig = done => {
+      window.addEventListener('message', event => {
+        if (event.data.type === 'init') {
+          config = event.data.value;
+          name = event.data.name;
+		  console.log('Init: '+JSON.stringify(event.data));
+          done();
+        }
+      })
+    }
+
+    const createMap = () => {
+      require([
+      "esri/widgets/Sketch", 
+	  "esri/widgets/Sketch/SketchViewModel",
+      "esri/Map",
+      "esri/layers/GraphicsLayer",
+	  "esri/layers/FeatureLayer",
+      "esri/views/MapView",
+	  "esri/views/draw/Draw",
+	  "esri/Graphic",
+	  "esri/geometry/SpatialReference",
+	  "esri/geometry/projection",
+	  "esri/widgets/Fullscreen"
+      ], 
+	  function( 
+	  Sketch, 
+	  SketchViewModel, 
+	  Map, 
+	  GraphicsLayer,
+	  FeatureLayer,
+	  MapView, 
+	  Draw,
+	  Graphic,
+	  SpatialReference,
+	  projection,
+	  Fullscreen
+	  ) {
+	    var sketchViewModel;
+        var sketch;
+        var graphicsLayer;	
+        var GraphicsPunt = [];
+		var GraphicsLijn = [];
+		var GraphicsVlak = [];
+		var GraphicsZoom = [];	
+        var GeoJsonFeatureCollection = [];		
+	  
+        const map = new Map({ basemap: "topo-vector"});
+
+        const view = new MapView({
+          container: "map-container",
+          map: map,
+		  center: [5.9, 53.1],
+          zoom: 9
+        });
+		
+		////////////////////////////// EMPTY LAYERS EN TEKENLAAG TOEVOEGEN //////////////////////////////
+		
+		function DefineFeatureLayer (Title,GeometryType) {
+          var LayerDef = new FeatureLayer({
+            title: Title,
+            objectIdField: "ObjectID",
+            geometryType: GeometryType,
+            spatialReference: { wkid: 4326 },
+            source: [], // adding an empty feature collection
+			renderer: {
+              type: "simple",
+              symbol: (GeometryType === 'point') ? WFPointSymbol : (GeometryType === 'polyline') ? WFLineSymbol : WFFillSymbol
+			},
+            popupTemplate: {
+              title: "{Name} <br/><a href=\"https://www.w3schools.com?{Name}\">Link naar zaak</a>"
+              }
+            });
+		  return LayerDef;
+		}
+		
+		const LayerZaakVlak = DefineFeatureLayer ('Objecten','polygon');
+		map.add(LayerZaakVlak);
+		const LayerZaakPunt = DefineFeatureLayer ('Objecten','point');
+		map.add(LayerZaakPunt);		
+		const LayerZaakLijn = DefineFeatureLayer ('Objecten','polyline');
+		map.add(LayerZaakLijn);	
+		
+		// Tekenlaag toevoegen
+		graphicsLayer = new GraphicsLayer();  
+		map.add(graphicsLayer, 0);		
+		
+		////////////////FEATURE TEKENCOMONENT TOEVOEGEN EN FULL SCREEN /////////////////////
+
+        // full screen en sketch alleen tonen in edit mode
+        if ( config.canDrawFeatures ) {
+
+  		  // Full Screen
+		  const fullscreen = new Fullscreen({
+            view: view
+          });
+          view.ui.add(fullscreen, "bottom-right");
+		
+
+		  // Tekentool toevoegen 
+		  sketch = new Sketch({
+            layer: graphicsLayer,
+            view: view,
+            // graphic will be selected as soon as it is created
+            creationMode: "update"
+          });
+          view.ui.add(sketch, "top-right");
+  
+          // Create a new instance of sketchViewModel
+          view.when(function() {
+            sketchViewModel = new SketchViewModel({
+              view: view,
+              layer: graphicsLayer,
+              updateOnGraphicClick: false,
+              defaultUpdateOptions: {
+                // set the default options for the update operations
+                toggleToolOnClick: false // only reshape operation will be enabled
+			  }
+            });
+		  });
+
+		  //Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
+		  sketch.on(["create","remove","reshape","update"], function(event) {
+            GraphicsToGeoJson (graphicsLayer.graphics);
+			console.log('Send featureChange - value: '+JSON.stringify(GeoJsonFeatureCollection));
+            window.top.postMessage({
+              type: 'featureChange',
+              name: name,
+			  version: 3,
+              value: JSON.stringify(GeoJsonFeatureCollection)
+              },
+              '*'
+            );
+          });
+		  
+		  // zorgen dat objecten altijd gelijk getoond worden
+		  graphicsLayer.graphics.on(["before-add"], function(event) {
+			if (event.item.geometry.rings !== undefined) { event.item.symbol = WFFillSymbol; }
+			else if ( event.item.geometry.paths !== undefined) { event.item.symbol = WFLineSymbol; }
+            else { event.item.symbol = WFPointSymbol; }
+          });
+		};
+
+        /////////////////////INTITIELE WAARDE OP DE KAART ZETTEN ///////////////////////////		
+
+		//Initial value GeoJSON op kaart zetten  
+		if (config.initialFeature) {
+		  view.when(function() {
+		    GeoJsonToGraphics (config.initialFeature); 
+		    graphicsLayer.addMany(GraphicsPunt);
+		    graphicsLayer.addMany(GraphicsLijn);
+		    graphicsLayer.addMany(GraphicsVlak);
+		    // En nu nog even inzoomen op de graphics
+		    view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		    view.goTo(graphicsLayer.graphics);
+	      });
+		};
+		
+		/////////////////////////////////SET FEATURE ///////////////////////////////////////
+		
+		// Toevoegen features aan layer
+        function applyEditsToLayer(edits,layertje) {
+          layertje
+            .applyEdits(edits)
+            .catch(function (error) {
+              console.log(error);
+            });
+        }
+
+ 		function addFeaturesToLayer (GeoJson) {
+          GeoJsonToGraphics (GeoJson);
+		
+		  // addEdits object tells applyEdits that you want to add the features
+          const addEditsLijn = { addFeatures: GraphicsLijn };
+          const addEditsVlak = { addFeatures: GraphicsVlak };
+          const addEditsPunt = { addFeatures: GraphicsPunt };	
+
+          // apply the edits to the layer
+          applyEditsToLayer(addEditsLijn,LayerZaakLijn);
+          applyEditsToLayer(addEditsVlak,LayerZaakVlak);
+          applyEditsToLayer(addEditsPunt,LayerZaakPunt);
+			
+		  // En nu nog even inzoomen op de graphics
+		  // Als er meer graphics achter elkaar toegevoegd worden is dit ongewenst, vandaar uitgeschakeld
+		  //view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		  //view.goTo(GraphicsZoom);
+        }
+
+        // Listener for setFeature
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'setFeature') {
+            console.log('setFeature: '+JSON.stringify(event.data));
+			addFeaturesToLayer (event.data.value)
+          }
+        });
+		
+		/////////////////////////////////// CLICK /////////////////////////////////////////
+		
+		if ( !config.canDrawFeatures ) {
+		  view.on(["pointer-down"], function(evt) {
+			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}]);
+			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatureCollection));
+			window.top.postMessage({
+              type: 'click',
+              name: name,
+			  version: 3,
+              value: JSON.stringify(GeoJsonFeatureCollection)
+              },
+              '*'
+            );
+			
+			// Zet 'm ook gelijk op de kaart, eerst weggehaald
+			GeoJsonToGraphics(GeoJsonFeatureCollection);
+            setMarker(GraphicsPunt);
+          });
+        };
+	
+		/////////////////////////////////// SET MARKER ////////////////////////////////////
+
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'setMarker' && event.data.value) {
+			console.log('setMarker: '+JSON.stringify(event.data));
+			GeoJsonToGraphics (event.data.value);
+            setMarker(GraphicsPunt);
+          } else if (event.data.type === 'setMarker') {
+		      view.graphics.removeAll();
+		  }
+        });
+		
+		function setMarker(GraphicsMarker){
+          view.graphics.removeAll();
+		  GraphicsMarker.forEach(function(element) { 
+			view.graphics.add(element);
+			view.goTo({target:element.geometry, zoom: 15}, { duration: 800 });
+		  });
+        }
+       
+		///////////////////////////// FUNCTIES VOOR TRANSFORMATIE /////////////////////////
+
+        function GeoJsonToGraphics (GeoJson) {
+		  GraphicsPunt = [];
+		  GraphicsLijn = [];
+		  GraphicsVlak = [];
+		  GraphicsZoom = [];
+		  if (GeoJson !== undefined ) {
+		    GeoJson.features.forEach(function(element) { 
+		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
+			  var featuretje = { geometry: geometrietje };
+			  var graphicje = Graphic.fromJSON(featuretje);
+			  GraphicsZoom.push (graphicje);
+			  graphicje.attributes = element.properties;
+			  projection.load().then(function(evt) {
+			    graphicje.geometry = projection.project(graphicje.geometry, view.spatialReference);
+              });
+			  if (element.geometry.type == "Point") { graphicje.symbol = WFPointSymbol;  GraphicsPunt.push(graphicje);}
+              else if (element.geometry.type == "LineString") { graphicje.symbol = WFLineSymbol; GraphicsLijn.push(graphicje);}
+			  else { graphicje.symbol = WFFillSymbol; GraphicsVlak.push(graphicje);};
+	        });
+          }	
+        } 
+		
+		function GraphicsToGeoJson (Graphics) {
+          GeoJsonFeatureCollection = {
+              type: "FeatureCollection",
+              features: []
+              };
+            GeoJsonFeatureCollection.features = Graphics.map (
+              ({ attributes, geometry }, index) => {
+                return {
+                  id: index,
+                  properties: attributes,
+		          type: "Feature",
+                  geometry: Terraformer.ArcGIS.parse(geometry)
+                };
+              }
+            );
+        } 
+        
+		///////////////////////////// EN NOG WAT GRAFISCHE DINGEN ////////////////////////////////////
+		
+		//kruis ipv pointer op de map
+		document.getElementById("map-container").style.cursor = "crosshair";
+	 
+  	  });
+	  
+	};
+	  
+	new Promise(loadZsConfig).then(() => {
+	  createMap();
+    });	  
+
+    </script>
+  </head>
+  <body>
+    <div id="map-container"></div>
+  </body>
+</html>
