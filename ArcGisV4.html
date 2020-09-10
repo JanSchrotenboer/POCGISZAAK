@@ -30,6 +30,7 @@
 	let map;
     let config;
     let name;
+	let MessageVersion = 4;
 	
     const loadZsConfig = done => {
       window.addEventListener('message', event => {
@@ -159,7 +160,7 @@
             window.top.postMessage({
               type: 'featureChange',
               name: name,
-			  version: 3,
+			  version: MessageVersion,
               value: JSON.stringify(GeoJsonFeatureCollection)
               },
               '*'
@@ -236,7 +237,7 @@
 			window.top.postMessage({
               type: 'click',
               name: name,
-			  version: 3,
+			  version: MessageVersion,
               value: JSON.stringify(GeoJsonFeatureCollection)
               },
               '*'
