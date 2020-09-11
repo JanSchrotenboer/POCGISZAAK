@@ -254,7 +254,7 @@
         window.addEventListener('message', (event) => {
           if (event.data.type === 'setMarker' && event.data.value) {
 			console.log('setMarker: '+JSON.stringify(event.data));
-			GeoJsonToGraphics (event.data.value);
+			GeoJsonToGraphics (event.data.value, 'Geometry');
             setMarker(GraphicsPunt);
           } else if (event.data.type === 'setMarker') {
 		      view.graphics.removeAll();
