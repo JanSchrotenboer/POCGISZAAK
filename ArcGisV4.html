@@ -77,7 +77,7 @@
 		var GraphicsLijn = [];
 		var GraphicsVlak = [];
 		var GraphicsZoom = [];	
-        var GeoJsonFeatureCollection = [];		
+        var GeoJsonFeatures = [];		
 	  
         const map = new Map({ basemap: "topo-vector"});
 
@@ -156,12 +156,12 @@
 		  //Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
 		  sketch.on(["create","remove","reshape","update"], function(event) {
             GraphicsToGeoJson (graphicsLayer.graphics);
-			console.log('Send featureChange - value: '+JSON.stringify(GeoJsonFeatureCollection));
+			console.log('Send featureChange - value: '+JSON.stringify(GeoJsonFeatures));
             window.top.postMessage({
               type: 'featureChange',
               name: name,
 			  version: MessageVersion,
-              value: JSON.stringify(GeoJsonFeatureCollection)
+              value: JSON.stringify(GeoJsonFeatures)
               },
               '*'
             );
@@ -233,19 +233,19 @@
 		if ( !config.canDrawFeatures ) {
 		  view.on(["pointer-down"], function(evt) {
 			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}]);
-			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatureCollection));
+			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
 			window.top.postMessage({
               type: 'click',
               name: name,
 			  version: MessageVersion,
-              value: JSON.stringify(GeoJsonFeatureCollection)
+              value: JSON.stringify(GeoJsonFeatures)
               },
               '*'
             );
 			
 			// Zet 'm ook gelijk op de kaart, eerst weggehaald
-			GeoJsonToGraphics(GeoJsonFeatureCollection);
-            setMarker(GraphicsPunt);
+			//GeoJsonToGraphics(GeoJsonFeatures);
+            //setMarker(GraphicsPunt);
           });
         };
 	
@@ -277,28 +277,40 @@
 		  GraphicsVlak = [];
 		  GraphicsZoom = [];
 		  if (GeoJson !== undefined ) {
-		    GeoJson.features.forEach(function(element) { 
-		      var geometrietje = Terraformer.ArcGIS.convert(element.geometry);
+            // Check of het een collection betreft  
+		    if (GeoJson.features !== undefined) {
+			  for (x in GeoJson.features) {
+			    console.log('Geometry 1: '+JSON.stringify(GeoJson.features[x].geometry));
+                GeoJsonGeometryToGraphic(GeoJson.features[x].geometry, GeoJson.features[x].properties);
+              }
+			} else if ( GeoJson.type === 'Feature') {
+			    console.log('Geometry 2: '+JSON.stringify(GeoJson.geometry));
+			    GeoJsonGeometryToGraphic ( GeoJson.geometry, GeoJson.properties );
+			} else {
+			    console.log('Geometry 3: '+JSON.stringify(GeoJson));
+                GeoJsonGeometryToGraphic ( GeoJson, null );
+            }			  
+		    function GeoJsonGeometryToGraphic (FeatureGeometry,FeatureProperties) {
+              var geometrietje = Terraformer.ArcGIS.convert(FeatureGeometry);
 			  var featuretje = { geometry: geometrietje };
 			  var graphicje = Graphic.fromJSON(featuretje);
 			  GraphicsZoom.push (graphicje);
-			  graphicje.attributes = element.properties;
+			  graphicje.attributes = FeatureProperties;
 			  projection.load().then(function(evt) {
 			    graphicje.geometry = projection.project(graphicje.geometry, view.spatialReference);
               });
-			  if (element.geometry.type == "Point") { graphicje.symbol = WFPointSymbol;  GraphicsPunt.push(graphicje);}
-              else if (element.geometry.type == "LineString") { graphicje.symbol = WFLineSymbol; GraphicsLijn.push(graphicje);}
+			  if (FeatureGeometry.type == "Point") { graphicje.symbol = WFPointSymbol;  GraphicsPunt.push(graphicje);}
+              else if (FeatureGeometry.type == "LineString") { graphicje.symbol = WFLineSymbol; GraphicsLijn.push(graphicje);}
 			  else { graphicje.symbol = WFFillSymbol; GraphicsVlak.push(graphicje);};
-	        });
+	        }
           }	
         } 
 		
-		function GraphicsToGeoJson (Graphics) {
-          GeoJsonFeatureCollection = {
-              type: "FeatureCollection",
-              features: []
-              };
-            GeoJsonFeatureCollection.features = Graphics.map (
+		function GraphicsToGeoJson (Graphics, Level = 'Collection') {
+		  if (Level === 'Geometry') {
+		    GeoJsonFeatures = Terraformer.ArcGIS.parse(Graphics[1].geometry)
+          } else {
+		    GeoJsonFeatures = Graphics.map (
               ({ attributes, geometry }, index) => {
                 return {
                   id: index,
@@ -308,7 +320,14 @@
                 };
               }
             );
-        } 
+		    if ( Level === 'Collection') {
+		      GeoJsonFeatures = {
+                type: "FeatureCollection",
+                features: GeoJsonFeatures
+                };
+		    }
+		  }
+		} 
         
 		///////////////////////////// EN NOG WAT GRAFISCHE DINGEN ////////////////////////////////////
 		
