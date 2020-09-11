@@ -232,7 +232,12 @@
 		
 		if ( !config.canDrawFeatures ) {
 		  view.on(["pointer-down"], function(evt) {
-			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}]);
+			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Geometry');
+			// Bugje: Deze regel omdat zaaksysteem X en Y omdraait
+			var xie = GeoJsonFeatures.coordinates[0];
+			console.log('Geometry xie: '+JSON.stringify(xie));
+			GeoJsonFeatures.coordinates[0] = GeoJsonFeatures.coordinates[1]
+            GeoJsonFeatures.coordinates[1] = xie;					
 			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
 			window.top.postMessage({
               type: 'click',
@@ -264,6 +269,7 @@
 		function setMarker(GraphicsMarker){
           view.graphics.removeAll();
 		  GraphicsMarker.forEach(function(element) { 
+		    console.log('setMarkertje: '+JSON.stringify(element));
 			view.graphics.add(element);
 			view.goTo({target:element.geometry, zoom: 15}, { duration: 800 });
 		  });
@@ -288,6 +294,10 @@
 			    GeoJsonGeometryToGraphic ( GeoJson.geometry, GeoJson.properties );
 			} else {
 			    console.log('Geometry 3: '+JSON.stringify(GeoJson));
+				var xie = GeoJson.coordinates[0];
+				console.log('Geometry xie: '+JSON.stringify(xie));
+				GeoJson.coordinates[0] = GeoJson.coordinates[1]
+                GeoJson.coordinates[1] = xie;				
                 GeoJsonGeometryToGraphic ( GeoJson, null );
             }			  
 		    function GeoJsonGeometryToGraphic (FeatureGeometry,FeatureProperties) {
@@ -308,8 +318,8 @@
 		
 		function GraphicsToGeoJson (Graphics, Level = 'Collection') {
 		  if (Level === 'Geometry') {
-		    GeoJsonFeatures = Terraformer.ArcGIS.parse(Graphics[1].geometry)
-          } else {
+		    GeoJsonFeatures = Terraformer.ArcGIS.parse(Graphics[0].geometry)
+		  } else {
 		    GeoJsonFeatures = Graphics.map (
               ({ attributes, geometry }, index) => {
                 return {
