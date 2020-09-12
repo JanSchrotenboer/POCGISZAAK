@@ -31,7 +31,7 @@
     let config;
     let name;
 	let MessageVersion = 4;
-	console.log ('Wetterskip Fryslan Integration version: 4.2');
+	console.log ('Wetterskip Fryslan Integration version: 4.3');
 	
     const loadZsConfig = done => {
       window.addEventListener('message', event => {
@@ -233,14 +233,14 @@
 		
 		if ( !config.canDrawFeatures ) {
 		  view.on(["pointer-down"], function(evt) {
-			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Feature');
+			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Geometry');
 			// Bugje: Deze regel omdat zaaksysteem X en Y omdraait
-			/*var xie = GeoJsonFeatures.coordinates[0];
+			var xie = GeoJsonFeatures.coordinates[0];
 			console.log('Geometry xie: '+JSON.stringify(xie));
 			GeoJsonFeatures.coordinates[0] = GeoJsonFeatures.coordinates[1]
             GeoJsonFeatures.coordinates[1] = xie;
 			var puntje = GeoJsonFeatures;
-			GeoJsonFeatures.Point = {coordinates: GeoJsonFeatures.coordinates};*/
+			GeoJsonFeatures.Point = {coordinates: GeoJsonFeatures.coordinates};
 			//GeoJsonFeatures.Point.coordinates = 'Japie2';
             // Einde bugje			
 			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
