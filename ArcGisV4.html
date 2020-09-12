@@ -233,14 +233,14 @@
 		
 		if ( !config.canDrawFeatures ) {
 		  view.on(["pointer-down"], function(evt) {
-			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Geometry');
+			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Collection');
 			// Bugje: Deze regel omdat zaaksysteem X en Y omdraait
-			var xie = GeoJsonFeatures.coordinates[0];
+			/*var xie = GeoJsonFeatures.coordinates[0];
 			console.log('Geometry xie: '+JSON.stringify(xie));
 			GeoJsonFeatures.coordinates[0] = GeoJsonFeatures.coordinates[1]
             GeoJsonFeatures.coordinates[1] = xie;
 			var puntje = GeoJsonFeatures;
-			GeoJsonFeatures.Point = {coordinates: GeoJsonFeatures.coordinates};
+			GeoJsonFeatures.Point = {coordinates: GeoJsonFeatures.coordinates};*/
 			//GeoJsonFeatures.Point.coordinates = 'Japie2';
             // Einde bugje			
 			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
@@ -250,7 +250,7 @@
               type: 'click',
               name: name,
 			  version: MessageVersion,
-              value: JSON.stringify(GeoJsonFeatures) // JSON.stringify(GeoJsonFeatures)
+              value: JSON.stringify(GeoJsonFeatures.coordinates) // JSON.stringify(GeoJsonFeatures)
               },
               '*'
             );
