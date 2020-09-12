@@ -237,13 +237,16 @@
 			var xie = GeoJsonFeatures.coordinates[0];
 			console.log('Geometry xie: '+JSON.stringify(xie));
 			GeoJsonFeatures.coordinates[0] = GeoJsonFeatures.coordinates[1]
-            GeoJsonFeatures.coordinates[1] = xie;					
+            GeoJsonFeatures.coordinates[1] = xie;
+            // Einde bugje			
 			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
+			
+			
 			window.top.postMessage({
               type: 'click',
               name: name,
 			  version: MessageVersion,
-              value: JSON.stringify(GeoJsonFeatures)
+              value: JSON.stringify(GeoJsonFeatures.coordinates) // JSON.stringify(GeoJsonFeatures)
               },
               '*'
             );
