@@ -44,7 +44,7 @@
     // Eventhandler voor value change
 	window.addEventListener('message', function(event) {
  	  if (event.data.type == 'featureChange' || event.data.type == 'click') {
-	    document.getElementById(event.data.name).value = event.data.value;
+	    document.getElementById(event.data.name).value = JSON.stringify(event.data.value);
 		if (event.data.type == 'click') {
 		  SetMarker('LatLon', 'MapFrame1');
 		}
@@ -54,13 +54,16 @@
 	// SetMarker
 	function SetMarker(SourceLatLon,MapFrame) {
       var MapFrame = document.getElementById(MapFrame);
-	  var LatLonnie = document.getElementById(SourceLatLon);
+	  
+	  //console.log('LatLon: '+document.getElementById(SourceLatLon);
+	  var LatLonnie = JSON.parse(document.getElementById(SourceLatLon).value);
+	  
       MapFrame.contentWindow.postMessage(
 	    {
   		  type: 'setMarker',
           name: SourceLatLon,
           version: 3,
-          value: JSON.parse(LatLonnie.value)
+          value: LatLonnie
         },
         '*'
       ); 

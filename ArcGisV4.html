@@ -31,7 +31,7 @@
     let config;
     let name;
 	let MessageVersion = 4;
-	console.log ('Wetterskip Fryslan Integration version: 4.3');
+	console.log ('Wetterskip Fryslan Integration version: 4.4');
 	
     const loadZsConfig = done => {
       window.addEventListener('message', event => {
@@ -162,7 +162,7 @@
               type: 'featureChange',
               name: name,
 			  version: MessageVersion,
-              value: JSON.stringify(GeoJsonFeatures)
+              value: JSON.parse(JSON.stringify(GeoJsonFeatures))
               },
               '*'
             );
@@ -239,8 +239,8 @@
 			console.log('Geometry xie: '+JSON.stringify(xie));
 			GeoJsonFeatures.coordinates[0] = GeoJsonFeatures.coordinates[1]
             GeoJsonFeatures.coordinates[1] = xie;
-			var puntje = GeoJsonFeatures;
-			GeoJsonFeatures.Point = {coordinates: GeoJsonFeatures.coordinates};
+			//var puntje = GeoJsonFeatures;
+			//GeoJsonFeatures.Point = {coordinates: GeoJsonFeatures.coordinates};
 			//GeoJsonFeatures.Point.coordinates = 'Japie2';
             // Einde bugje			
 			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
@@ -250,14 +250,14 @@
               type: 'click',
               name: name,
 			  version: MessageVersion,
-              value: { type: 'Point'} //JSON.stringify(GeoJsonFeatures.)
+              value: JSON.parse(JSON.stringify(GeoJsonFeatures))
               },
               '*'
             );
 			
 			// Zet 'm ook gelijk op de kaart, eerst weggehaald
-			//GeoJsonToGraphics(GeoJsonFeatures);
-            //setMarker(GraphicsPunt);
+			GeoJsonToGraphics(GeoJsonFeatures);
+            setMarker(GraphicsPunt);
           });
         };
 	
@@ -294,7 +294,7 @@
 		    if (GeoJson.features !== undefined) {
 			  for (x in GeoJson.features) {
 			    console.log('Geometry 1: '+JSON.stringify(GeoJson.features[x].geometry));
-                GeoJsonGeometryToGraphic(GeoJson.features[x].geometry, GeoJson.features[x].properties);
+                GeoJsonGeometryToGraphic(GeoJson.features[x].geometry, null);//GeoJson.features[x].properties);
               }
 			} else if ( GeoJson.type === 'Feature') {
 			    console.log('Geometry 2: '+JSON.stringify(GeoJson.geometry));
