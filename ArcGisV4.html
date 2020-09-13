@@ -131,7 +131,6 @@
           });
           view.ui.add(fullscreen, "bottom-right");
 		
-
 		  // Tekentool toevoegen 
 		  sketch = new Sketch({
             layer: graphicsLayer,
@@ -204,17 +203,14 @@
 
  		function addFeaturesToLayer (GeoJson) {
           GeoJsonToGraphics (GeoJson);
-		
 		  // addEdits object tells applyEdits that you want to add the features
           const addEditsLijn = { addFeatures: GraphicsLijn };
           const addEditsVlak = { addFeatures: GraphicsVlak };
           const addEditsPunt = { addFeatures: GraphicsPunt };	
-
           // apply the edits to the layer
           applyEditsToLayer(addEditsLijn,LayerZaakLijn);
           applyEditsToLayer(addEditsVlak,LayerZaakVlak);
           applyEditsToLayer(addEditsPunt,LayerZaakPunt);
-			
 		  // En nu nog even inzoomen op de graphics
 		  // Als er meer graphics achter elkaar toegevoegd worden is dit ongewenst, vandaar uitgeschakeld
 		  //view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
@@ -235,17 +231,9 @@
 		  view.on(["pointer-down"], function(evt) {
 			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Geometry');
 			// Bugje: Deze regel omdat zaaksysteem X en Y omdraait
-			var xie = GeoJsonFeatures.coordinates[0];
-			console.log('Geometry xie: '+JSON.stringify(xie));
-			GeoJsonFeatures.coordinates[0] = GeoJsonFeatures.coordinates[1]
-            GeoJsonFeatures.coordinates[1] = xie;
-			//var puntje = GeoJsonFeatures;
-			//GeoJsonFeatures.Point = {coordinates: GeoJsonFeatures.coordinates};
-			//GeoJsonFeatures.Point.coordinates = 'Japie2';
-            // Einde bugje			
+			[ GeoJsonFeatures.coordinates[0],GeoJsonFeatures.coordinates[1]] = [ GeoJsonFeatures.coordinates[1],GeoJsonFeatures.coordinates[0]]
+            // Einde Bugje			
 			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
-			
-			
 			window.top.postMessage({
               type: 'click',
               name: name,
@@ -254,7 +242,6 @@
               },
               '*'
             );
-			
 			// Zet 'm ook gelijk op de kaart, eerst weggehaald
 			//GeoJsonToGraphics(GeoJsonFeatures);
             //setMarker(GraphicsPunt);
@@ -293,18 +280,14 @@
             // Check of het een collection betreft  
 		    if (GeoJson.features !== undefined) {
 			  for (x in GeoJson.features) {
-			    console.log('Geometry 1: '+JSON.stringify(GeoJson.features[x].geometry));
                 GeoJsonGeometryToGraphic(GeoJson.features[x].geometry, null);//GeoJson.features[x].properties);
               }
 			} else if ( GeoJson.type === 'Feature') {
-			    console.log('Geometry 2: '+JSON.stringify(GeoJson.geometry));
 			    GeoJsonGeometryToGraphic ( GeoJson.geometry, GeoJson.properties );
 			} else {
-			    console.log('Geometry 3: '+JSON.stringify(GeoJson));
-				var xie = GeoJson.coordinates[0];
-				console.log('Geometry xie: '+JSON.stringify(xie));
-				GeoJson.coordinates[0] = GeoJson.coordinates[1]
-                GeoJson.coordinates[1] = xie;				
+				// Bugje: Deze regel omdat zaaksysteem X en Y omdraait
+				[ GeoJson.coordinates[0],GeoJson.coordinates[1]] = [GeoJson.coordinates[1],GeoJson.coordinates[0]]
+				// Einde Bugje
                 GeoJsonGeometryToGraphic ( GeoJson, null );
             }			  
 		    function GeoJsonGeometryToGraphic (FeatureGeometry,FeatureProperties) {
