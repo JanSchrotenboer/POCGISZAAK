@@ -230,9 +230,6 @@
 		if ( !config.canDrawFeatures ) {
 		  view.on(["pointer-down"], function(evt) {
 			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Geometry');
-			// Bugje: Deze regel omdat zaaksysteem X en Y omdraait
-			[ GeoJsonFeatures.coordinates[0],GeoJsonFeatures.coordinates[1]] = [ GeoJsonFeatures.coordinates[1],GeoJsonFeatures.coordinates[0]]
-            // Einde Bugje			
 			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
 			window.top.postMessage({
               type: 'click',
@@ -285,9 +282,6 @@
 			} else if ( GeoJson.type === 'Feature') {
 			    GeoJsonGeometryToGraphic ( GeoJson.geometry, GeoJson.properties );
 			} else {
-				// Bugje: Deze regel omdat zaaksysteem X en Y omdraait
-				[ GeoJson.coordinates[0],GeoJson.coordinates[1]] = [GeoJson.coordinates[1],GeoJson.coordinates[0]]
-				// Einde Bugje
                 GeoJsonGeometryToGraphic ( GeoJson, null );
             }			  
 		    function GeoJsonGeometryToGraphic (FeatureGeometry,FeatureProperties) {
