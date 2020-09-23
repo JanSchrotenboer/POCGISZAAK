@@ -31,20 +31,10 @@
     let config;
     let name;
 	let MessageVersion = 4;
-	console.log ('Wetterskip Fryslan Integration version: 4.4');
-	
-    const loadZsConfig = done => {
-      window.addEventListener('message', event => {
-        if (event.data.type === 'init') {
-          config = event.data.value;
-          name = event.data.name;
-		  console.log('Init: '+JSON.stringify(event.data));
-          done();
-        }
-      })
-    }
+	console.log ('Wetterskip Fryslan Integration version: 4.5');
 
-    const createMap = () => {
+    const createMap = done => {
+
       require([
       "esri/widgets/Sketch", 
 	  "esri/widgets/Sketch/SketchViewModel",
@@ -122,73 +112,105 @@
 		
 		////////////////FEATURE TEKENCOMONENT TOEVOEGEN EN FULL SCREEN /////////////////////
 
-        // full screen en sketch alleen tonen in edit mode
-        if ( config.canDrawFeatures ) {
+        window.addEventListener('message', event => {
+          if (event.data.type === 'init') {
+            config = event.data.value;
+            name = event.data.name;
+		    console.log('Init: '+JSON.stringify(event.data));
+            initMap();
+          }
+        });
 
-  		  // Full Screen
-		  const fullscreen = new Fullscreen({
-            view: view
-          });
-          view.ui.add(fullscreen, "bottom-right");
-		
-		  // Tekentool toevoegen 
-		  sketch = new Sketch({
-            layer: graphicsLayer,
-            view: view,
-            // graphic will be selected as soon as it is created
-            creationMode: "update"
-          });
-          view.ui.add(sketch, "top-right");
-  
-          // Create a new instance of sketchViewModel
-          view.when(function() {
-            sketchViewModel = new SketchViewModel({
-              view: view,
-              layer: graphicsLayer,
-              updateOnGraphicClick: false,
-              defaultUpdateOptions: {
-                // set the default options for the update operations
-                toggleToolOnClick: false // only reshape operation will be enabled
-			  }
+        function initMap(){
+          // full screen en sketch alleen tonen in edit mode
+          if ( config.canDrawFeatures ) {
+
+  		    // Full Screen
+		    const fullscreen = new Fullscreen({
+              view: view
             });
-		  });
+            view.ui.add(fullscreen, "bottom-right");
+		
+		    // Tekentool toevoegen 
+		    sketch = new Sketch({
+              layer: graphicsLayer,
+              view: view,
+              // graphic will be selected as soon as it is created
+              creationMode: "update"
+            });
+            view.ui.add(sketch, "top-right");
+  
+            // Create a new instance of sketchViewModel
+            view.when(function() {
+              sketchViewModel = new SketchViewModel({
+                view: view,
+                layer: graphicsLayer,
+                updateOnGraphicClick: false,
+                defaultUpdateOptions: {
+                  // set the default options for the update operations
+                  toggleToolOnClick: false // only reshape operation will be enabled
+			    }
+              });
+		    });
 
-		  //Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
-		  sketch.on(["create","remove","reshape","update"], function(event) {
-            GraphicsToGeoJson (graphicsLayer.graphics);
-			console.log('Send featureChange - value: '+JSON.stringify(GeoJsonFeatures));
-            window.top.postMessage({
-              type: 'featureChange',
-              name: name,
-			  version: MessageVersion,
-              value: JSON.parse(JSON.stringify(GeoJsonFeatures))
-              },
-              '*'
-            );
-          });
+		    //Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent
+		    sketch.on(["create","remove","reshape","update"], function(event) {
+              GraphicsToGeoJson (graphicsLayer.graphics);
+			  console.log('Send featureChange - value: '+JSON.stringify(GeoJsonFeatures));
+              window.top.postMessage({
+                type: 'featureChange',
+                name: name,
+			    version: MessageVersion,
+                value: JSON.parse(JSON.stringify(GeoJsonFeatures))
+                },
+                '*'
+              );
+            });
 		  
-		  // zorgen dat objecten altijd gelijk getoond worden
-		  graphicsLayer.graphics.on(["before-add"], function(event) {
-			if (event.item.geometry.rings !== undefined) { event.item.symbol = WFFillSymbol; }
-			else if ( event.item.geometry.paths !== undefined) { event.item.symbol = WFLineSymbol; }
-            else { event.item.symbol = WFPointSymbol; }
-          });
-		};
+		    // zorgen dat objecten altijd gelijk getoond worden
+		    graphicsLayer.graphics.on(["before-add"], function(event) {
+			  if (event.item.geometry.rings !== undefined) { event.item.symbol = WFFillSymbol; }
+			  else if ( event.item.geometry.paths !== undefined) { event.item.symbol = WFLineSymbol; }
+              else { event.item.symbol = WFPointSymbol; }
+            });
+		  };
 
-        /////////////////////INTITIELE WAARDE OP DE KAART ZETTEN ///////////////////////////		
+          /////////////////////INTITIELE WAARDE OP DE KAART ZETTEN ///////////////////////////		
 
-		//Initial value GeoJSON op kaart zetten  
-		if (config.initialFeature) {
-		  view.when(function() {
-		    GeoJsonToGraphics (config.initialFeature); 
-		    graphicsLayer.addMany(GraphicsPunt);
-		    graphicsLayer.addMany(GraphicsLijn);
-		    graphicsLayer.addMany(GraphicsVlak);
-		    // En nu nog even inzoomen op de graphics
-		    view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
-		    view.goTo(graphicsLayer.graphics);
-	      });
-		};
+		  //Initial value GeoJSON op kaart zetten  
+		  if (config.initialFeature) {
+		    view.when(function() {
+		      GeoJsonToGraphics (config.initialFeature); 
+		      graphicsLayer.addMany(GraphicsPunt);
+		      graphicsLayer.addMany(GraphicsLijn);
+		      graphicsLayer.addMany(GraphicsVlak);
+		      // En nu nog even inzoomen op de graphics
+		      view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		      view.goTo(graphicsLayer.graphics);
+	        });
+		  };
+
+		  /////////////////////////////////// CLICK /////////////////////////////////////////
+		
+		  if ( !config.canDrawFeatures ) {
+		    view.on(["pointer-down"], function(evt) {
+			  GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Geometry');
+			  console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
+			  window.top.postMessage({
+                type: 'click',
+                name: name,
+			    version: MessageVersion,
+                value: JSON.parse(JSON.stringify(GeoJsonFeatures))
+                },
+                '*'
+              );
+			  // Zet 'm ook gelijk op de kaart, eerst weggehaald
+			  //GeoJsonToGraphics(GeoJsonFeatures);
+              //setMarker(GraphicsPunt);
+            });
+          };
+
+		};  
 		
 		/////////////////////////////////SET FEATURE ///////////////////////////////////////
 		
@@ -225,26 +247,6 @@
           }
         });
 		
-		/////////////////////////////////// CLICK /////////////////////////////////////////
-		
-		if ( !config.canDrawFeatures ) {
-		  view.on(["pointer-down"], function(evt) {
-			GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Geometry');
-			console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
-			window.top.postMessage({
-              type: 'click',
-              name: name,
-			  version: MessageVersion,
-              value: JSON.parse(JSON.stringify(GeoJsonFeatures))
-              },
-              '*'
-            );
-			// Zet 'm ook gelijk op de kaart, eerst weggehaald
-			//GeoJsonToGraphics(GeoJsonFeatures);
-            //setMarker(GraphicsPunt);
-          });
-        };
-	
 		/////////////////////////////////// SET MARKER ////////////////////////////////////
 
         window.addEventListener('message', (event) => {
@@ -330,10 +332,12 @@
 	 
   	  });
 	  
+	  done();
 	};
 	  
-	new Promise(loadZsConfig).then(() => {
-	  createMap();
+	new Promise(createMap).then(() => {
+	  //createMap();
+	  console.log('Klaar met laden kaart...nu komen de messages');
     });	  
 
     </script>
