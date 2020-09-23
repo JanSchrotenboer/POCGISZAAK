@@ -31,7 +31,7 @@
     let config;
     let name;
 	let MessageVersion = 4;
-	console.log ('Wetterskip Fryslan Integration version: 4.5');
+	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 4.5';
 
     const createMap = done => {
 
@@ -336,8 +336,7 @@
 	};
 	  
 	new Promise(createMap).then(() => {
-	  //createMap();
-	  console.log('Klaar met laden kaart...nu komen de messages');
+	  console.log(IntegrationVersion);
     });	  
 
     </script>
