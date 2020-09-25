@@ -299,7 +299,7 @@
             // Check of het een collection betreft  
 		    if (GeoJson.features !== undefined) {
 			  for (x in GeoJson.features) {
-                GeoJsonGeometryToGraphic(GeoJson.features[x].geometry, null);//GeoJson.features[x].properties);
+                GeoJsonGeometryToGraphic(GeoJson.features[x].geometry, GeoJson.features[x].properties);
               }
 			} else if ( GeoJson.type === 'Feature') {
 			    GeoJsonGeometryToGraphic ( GeoJson.geometry, GeoJson.properties );
