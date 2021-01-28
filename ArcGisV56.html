@@ -82,15 +82,29 @@
 		const map = new WebMap({
           portalItem: {
             // autocasts as new PortalItem()
-            id: "8f100ffc401a49c398d1d6ca3f9746df", 
+            id: "69a0b65c36814be6bf46ae18106bb87b", 
+			
+			//28cad4ab8fb84b2092aaca49ca21d3c2 - productie legger zonder inlog
+			//8f100ffc401a49c398d1d6ca3f9746df 
+			//e81a21ea2dc94704881f2fc511e221dd
             portal: {
-              url: "https://gistest.wetterskipfryslan.nl/portal",
+              url: "https://gis.wetterskipfryslan.nl/portal",
 			  authMode: "auto",
 			  canSignInIDP: true,
-			  canSignInArcGIS: false   
+			  canSignInArcGIS: true   
 	        }
           }
 		});
+		
+		
+		/*esriConfig.portalUrl = "https://gistest.wetterskipfryslan.nl/portal";
+
+        const webmap = new WebMap({
+           portalItem: { // autocasts as new PortalItem()
+           id: "8f100ffc401a49c398d1d6ca3f9746df"
+           }
+        });
+		*/
 		
 		
 		
