@@ -487,6 +487,14 @@
 			  var graphicje = Graphic.fromJSON(featuretje);
 			  GraphicsZoom.push (graphicje);
 			  graphicje.attributes = FeatureProperties;
+			  
+			  
+			  
+			  console.log('Properties: '+JSON.stringify(FeatureProperties));
+			  
+			  
+			  
+			  
 			  projection.load().then(function(evt) {
 			    graphicje.geometry = projection.project(graphicje.geometry,view.spatialReference);
               });
