@@ -478,12 +478,13 @@
 			  var featuretje = { geometry: geometrietje };
 			  var graphicje = Graphic.fromJSON(featuretje);
 			  GraphicsZoom.push (graphicje);
-			  
+
+			  console.log('Properties: '+JSON.stringify(FeatureProperties));			  
 			  graphicje.attributes = AttibutesFromGeoJsonProperties (FeatureProperties);
 			  
 			  //graphicje.attributes = FeatureProperties;
 			  
-			  console.log('Properties: '+JSON.stringify(FeatureProperties));
+
 			  console.log('Properties in graphicje: '+JSON.stringify(graphicje.attributes));
 			  
 			  
@@ -537,7 +538,7 @@
 		
 		function AttibutesFromGeoJsonProperties (Properties) {
 		  console.log('host'+window.location.protocol + "//" + window.location.host);
-		  console.log('config: '+name);
+		  console.log('name: '+name);
 		  var Attributes = {};
 		  if (Properties !== undefined) {
 		    var Host = window.location.protocol + "//" + window.location.host;
