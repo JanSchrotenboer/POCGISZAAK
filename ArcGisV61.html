@@ -543,20 +543,25 @@
 		  if (Properties !== undefined) {
 		    var Host = window.location.protocol + "//" + window.location.host;
 		    if (name === 'advancedSearchMap') {
-			  var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
-		      Attributes.ID = ((Properties.zaaksysteem.self.id !==  undefined) ? Properties.zaaksysteem.self.id : null);
-			  Attributes.TYPE = ((Properties.zaaksysteem.self.caseType !==  undefined) ? Properties.zaaksysteem.self.caseType : null);
-			  Attributes.ICON = ( Properties.zaaksysteem.self.family) ;
-			  Attributes.STATUS = Properties.zaaksysteem.self.status ;
-			  Attributes.FAMILY = Properties.zaaksysteem.self.family ;
-			  Attributes.TITLE = ((Properties.zaaksysteem.self.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.self.caseNumber : Properties.zaaksysteem.self.title);
-			  Attributes.SUBTITLE = ((Properties.zaaksysteem.self.subtitle !==  undefined) ? Properties.zaaksysteem.self.subtitle : null);
-			  Attributes.URL = Host+((Properties.zaaksysteem.self.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.self.caeNumber : ((Properties.zaaksysteem.self.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.self.id);
-			  Attributes.ASSIGNEE = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.assignee :  null);
-			  Attributes.REQUESTOR = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.requestor :  null);
-			  Attributes.LOCATION_DESCRIPTION = ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null);
-              Attributes.ORIGIN = ( SelfInd ? ((Properties.zaaksysteem.origin.custom_field_label !==  undefined) ? Properties.zaaksysteem.origin.custom_field_label : null) : ((Properties.zaaksysteem.origin.family ===  'object') ? Properties.zaaksysteem.origin.type + ' - ' + Properties.zaaksysteem.origin.title : Properties.zaaksysteem.origin.family)) ;
-              Attributes.WF_LABEL = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.caseNumber : null);
+			  try {
+			    var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
+		        Attributes.ID = ((Properties.zaaksysteem.self.id !==  undefined) ? Properties.zaaksysteem.self.id : null);
+			    Attributes.TYPE = ((Properties.zaaksysteem.self.caseType !==  undefined) ? Properties.zaaksysteem.self.caseType : null);
+			    Attributes.ICON = ( Properties.zaaksysteem.self.family) ;
+			    Attributes.STATUS = Properties.zaaksysteem.self.status ;
+			    Attributes.FAMILY = Properties.zaaksysteem.self.family ;
+			    Attributes.TITLE = ((Properties.zaaksysteem.self.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.self.caseNumber : Properties.zaaksysteem.self.title);
+			    Attributes.SUBTITLE = ((Properties.zaaksysteem.self.subtitle !==  undefined) ? Properties.zaaksysteem.self.subtitle : null);
+			    Attributes.URL = Host+((Properties.zaaksysteem.self.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.self.caeNumber : ((Properties.zaaksysteem.self.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.self.id);
+			    Attributes.ASSIGNEE = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.assignee :  null);
+			    Attributes.REQUESTOR = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.requestor :  null);
+			    Attributes.LOCATION_DESCRIPTION = ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null);
+                Attributes.ORIGIN = ( SelfInd ? ((Properties.zaaksysteem.origin.custom_field_label !==  undefined) ? Properties.zaaksysteem.origin.custom_field_label : null) : ((Properties.zaaksysteem.origin.family ===  'object') ? Properties.zaaksysteem.origin.type + ' - ' + Properties.zaaksysteem.origin.title : Properties.zaaksysteem.origin.family)) ;
+                Attributes.WF_LABEL = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.caseNumber : null);
+			  }
+			  catch(err) {
+                console.log('error: '+err);
+              }
 		    } else if ( ["CaseMap", "ObjectMap"].includes(config.context.type) ) {
 		      //Indicatie voor als het een kenmerk van het betreffende object/zaak betreft
 		      var SelfInd = ((config.context.data.case !==  undefined) ? (config.context.data.case.number === Properties.zaaksysteem.origin.title) : (config.context.data.object.uuid === Properties.zaaksysteem.origin.identifier));
