@@ -537,11 +537,11 @@
 		
 		function AttibutesFromGeoJsonProperties (Properties) {
 		  console.log('host'+window.location.protocol + "//" + window.location.host);
-		  console.log('config: '+JSON.stringify(config));
+		  console.log('config: '+name);
 		  var Attributes = {};
 		  if (Properties !== undefined) {
 		    var Host = window.location.protocol + "//" + window.location.host;
-		    if (config.name === 'advancedSearchMap') {
+		    if (name === 'advancedSearchMap') {
 			  var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
 		      Attributes.ID = ((Properties.zaaksysteem.self.id !==  undefined) ? Properties.zaaksysteem.self.id : null);
 			  Attributes.TYPE = ((Properties.zaaksysteem.self.caseType !==  undefined) ? Properties.zaaksysteem.self.caseType : null);
