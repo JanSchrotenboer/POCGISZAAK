@@ -50,7 +50,7 @@
     let config;
     let name;
 	let MessageVersion = 5;
-	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 5.0';
+	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 6.1';
 
     const createMap = done => {
 
@@ -252,6 +252,7 @@
             config = event.data.value;
             name = event.data.name;
 		    console.log('Init: '+JSON.stringify(event.data));
+            console.log('Origin: '+ JSON.stringify(event.origin));
             initMap();
           }
         });
