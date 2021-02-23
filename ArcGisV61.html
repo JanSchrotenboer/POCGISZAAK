@@ -327,17 +327,26 @@
 
 		  //Initial value GeoJSON op kaart zetten  
 		  if (config.initialFeature) {
-		    view.when(function() {
+  		    if (name === 'advancedSearchMap' || ["CaseMap", "ObjectMap"].includes(((config.context.type !==  undefined) ? config.context.type : null))) {
+			  setFeature (config.initialFeature)
+			} else {
+			  GeoJsonToGraphicsLayer;
+			}
+		  };
+		  
+		  // GeoJSON op Graphicslayer voor tekenen of kenmerkgeometrie tonen  
+		  function GeoJsonToGraphicsLayer() {
+            view.when(function() {
 		      GeoJsonToGraphics (config.initialFeature); 
 		      graphicsLayer.addMany(GraphicsPunt);
 		      graphicsLayer.addMany(GraphicsLijn);
 		      graphicsLayer.addMany(GraphicsVlak);
 			  CopyGraphicsToLabelLayer();	
 		      // En nu nog even inzoomen op de graphics
-		      view.zoom = 3; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		      view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
 		      view.goTo(graphicsLayer.graphics);
 	        });
-		  };
+          };		  
 
 		  /////////////////////////////////// CLICK /////////////////////////////////////////
 		
@@ -410,8 +419,8 @@
 		  addFeaturesToLayers();
 		  // En nu nog even inzoomen op de graphics
 		  // Als er meer graphics achter elkaar toegevoegd worden is dit ongewenst, vandaar uitgeschakeld
-		  //view.zoom = 15; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
-		  //view.goTo(GraphicsZoom);
+		  view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		  view.goTo(GraphicsZoom);
 		};
 		
  		function addFeaturesToLayers() {
@@ -478,25 +487,15 @@
 			  var featuretje = { geometry: geometrietje };
 			  var graphicje = Graphic.fromJSON(featuretje);
 			  GraphicsZoom.push (graphicje);
-
-			  console.log('Properties: '+JSON.stringify(FeatureProperties));			  
+			  console.log('Properties GeoJSON: '+JSON.stringify(FeatureProperties));			  
 			  graphicje.attributes = AttibutesFromGeoJsonProperties (FeatureProperties);
-			  
-			  //graphicje.attributes = FeatureProperties;
-			  
-
-			  console.log('Properties in graphicje: '+JSON.stringify(graphicje.attributes));
-			  
-			  
-			  
+			  console.log('Properties Graphic: '+JSON.stringify(graphicje.attributes));
 			  projection.load().then(function(evt) {
 			    graphicje.geometry = projection.project(graphicje.geometry,view.spatialReference);
               });
 			  if (FeatureGeometry.type == "Point") { graphicje.symbol = WFPointSymbol;  GraphicsPunt.push(graphicje);}
               else if (FeatureGeometry.type == "LineString") { graphicje.symbol = WFLineSymbol; GraphicsLijn.push(graphicje);}
 			  else { graphicje.symbol = WFFillSymbol; GraphicsVlak.push(graphicje);};
-			  
-			  console.log('Properties in graphicje2: '+JSON.stringify(graphicje.attributes));
 	        }
           }	
         } 
@@ -541,7 +540,7 @@
 		  console.log('name: '+name);
 		  var Attributes = {};
 		  if (Properties !== undefined) {
-		    var Host = window.location.protocol + "//" + window.location.host;
+		    var Host = window.parent.location.protocol + "//" + window.parent.location.host;
 		    if (name === 'advancedSearchMap') {
 			  try {
 			    var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
@@ -584,12 +583,6 @@
 		  }
    	      return Attributes;
 		}
-		
-		//redirect/contact_page?uuid=c94be2a6-6968-4912-9de3-c702a33c4561
-        //intern/zaak/31464
-		//main/object/48393144-0632-4b2a-9d57-cd5a612bc2e2
-		
-		
 
 		///////////////////////////// EN NOG WAT GRAFISCHE DINGEN ////////////////////////////////////
 		
