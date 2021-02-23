@@ -540,7 +540,8 @@
 		  console.log('name: '+name);
 		  var Attributes = {};
 		  if (Properties !== undefined) {
-		    var Host = window.parent.location.protocol + "//" + window.parent.location.host;
+		    //var Host = window.parent.location.protocol + "//" + window.parent.location.host;
+			var Host = 'http://development.zaaksysteem.nl';
 		    if (name === 'advancedSearchMap') {
 			  try {
 			    var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
