@@ -208,7 +208,14 @@
 			  { name: "REQUESTOR", type: "string" },
 			  { name: "LOCATION_DESCRIPTION", type: "string" },
 			  { name: "STATUS", type: "string" },
-			  { name: "ICON", type: "string" }
+			  { name: "ICON", type: "string" },
+			  { name: "DISPLAY_POP_ASSIGNEE", type: "string" },
+			  { name: "DISPLAY_POP_REQUESTOR", type: "string" },
+			  { name: "DISPLAY_POP_LOCATION_DESCRIPTION", type: "string" },
+			  { name: "DISPLAY_POP_TYPE", type: "string" },
+			  { name: "DISPLAY_POP_DETAILS", type: "string" },
+			  { name: "DISPLAY_POP_ORIGIN", type: "string" },
+			  { name: "POP_TYPE_LABEL", type: "string" }
             ],
             geometryType: GeometryType,
             spatialReference: { wkid: 4326 },
@@ -220,7 +227,7 @@
 			//popupEnabled: false,
             popupTemplate: {
               title: "<div style='display: flex;  width: 100%; margin: 0; padding: 0px;'><div style='height: 10px; text-align: left; padding-right: 3px; flex-shrink: 0;'>	 <img src='https://janschrotenboer.github.io/POCGISZAAK/Icon{ICON}.png' height='20px'> </div> <div style='width: 100%; margin-bottom: -5px; font-size: 15px; color: #1B73E7; font-weight: 600; text-align: left; white-space: normal; padding: 2px 0px 0px 1px;'><a style='color: #1B73E7; text-decoration: none;' href='{URL}' target='_blank' >{TITLE}</a></div> </div>",
-			  content: "<div style='width: 100%; font-size: 12px;'><div style='color: #999;'>{SUBTITLE}</div><div style='margin-top: 2px; padding-top: 2px; border-top: 1px solid black;'><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Type</div><div style='padding-left: 5px;'>{TYPE}</div></div><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Aanvrager</div><div style='padding-left: 5px;'>{REQUESTOR}</div></div><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Behandelaar</div><div style='padding-left: 5px;'>{ASSIGNEE}</div></div><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Locatie</div><div style='padding-left: 5px;'>{ORIGIN}</div></div><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Adres</div><div style='padding-left: 5px;'>{LOCATION_DESCRIPTION}</div></div></div></div>"
+			  content: "<div style='width: 100%; font-size: 12px;'><div style='color: #999;'>{SUBTITLE}</div><div style='margin-top: 2px; padding-top: 2px; border-top: 1px solid black; display: {DISPLAY_POP_DETAILS}'><div style='display: {DISPLAY_POP_TYPE}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>{POP_TYPE_LABEL}</div><div style='padding-left: 5px;'>{TYPE}</div></div><div style='display: {DISPLAY_POP_REQUESTOR}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Aanvrager</div><div style='padding-left: 5px;'>{REQUESTOR}</div></div><div style='display: {DISPLAY_POP_ASSIGNEE}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Behandelaar</div><div style='padding-left: 5px;'>{ASSIGNEE}</div></div><div style='display: {DISPLAY_POP_ORIGIN}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Locatie</div><div style='padding-left: 5px;'>{ORIGIN}</div></div><div style='display: {DISPLAY_POP_LOCATION_DESCRIPTION}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Adres</div><div style='padding-left: 5px;'>{LOCATION_DESCRIPTION}</div></div></div></div>"
             },
 			labelingInfo: [labelClass],
 			listMode : "hide"//,
@@ -492,8 +499,8 @@
 			  var graphicje = Graphic.fromJSON(featuretje);
 			  GraphicsZoom.push (graphicje);
 			  console.log('Properties GeoJSON: '+JSON.stringify(FeatureProperties));			  
-			  graphicje.attributes = ((FeatureProperties !== null) ? AttibutesFromGeoJsonProperties (FeatureProperties) : null);
-			  console.log('Properties Graphic: '+JSON.stringify(graphicje.attributes));
+			  graphicje.attributes = ((FeatureProperties) ? AttibutesFromGeoJsonProperties (FeatureProperties) : null);
+			  console.log('Graphicje to push: '+JSON.stringify(graphicje));
 			  projection.load().then(function(evt) {
 			    graphicje.geometry = projection.project(graphicje.geometry,view.spatialReference);
               });
@@ -544,6 +551,7 @@
 		function AttibutesFromGeoJsonProperties (Properties) {
 		  //console.log('host'+window.location.protocol + "//" + window.location.host);
 		  //console.log('name: '+name);
+		  console.log('setMarkertje: '+JSON.stringify(Properties));
 		  var Attributes = {};
 		  //if (Properties !== undefined) {
 		    //var Host = window.parent.location.protocol + "//" + window.parent.location.host;
@@ -574,7 +582,7 @@
 		      var SelfInd = ((config.context.data.case !==  undefined) ? (config.context.data.case.number.toString() === Properties.zaaksysteem.origin.title) : (config.context.data.object.uuid === Properties.zaaksysteem.origin.identifier));
 		      console.log('selfind '+Properties.zaaksysteem.origin.family+':'+SelfInd+' number:'+config.context.data.case.number+' title:'+Properties.zaaksysteem.origin.title);
 			  Attributes.ID = Properties.zaaksysteem.origin.identifier ;
-			  Attributes.TYPE = ( !SelfInd ? Properties.zaaksysteem.origin.type : null);
+			  Attributes.TYPE = ( !SelfInd ? ((["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.type : 'Betrokkene') : null);
 			  Attributes.ICON = ( SelfInd ? 'MARKER' : Properties.zaaksysteem.origin.family.toUpperCase()) ;
 			  Attributes.STATUS = Properties.zaaksysteem.origin.status ;
 			  Attributes.FAMILY = Properties.zaaksysteem.origin.family ;
@@ -584,8 +592,15 @@
 			  Attributes.ASSIGNEE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.assignee :  null) : null );
 			  Attributes.REQUESTOR = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.requestor :  null) : null ) ;
 			  Attributes.LOCATION_DESCRIPTION = ( !SelfInd ? ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) : null) ;
-              Attributes.ORIGIN = ( !SelfInd ? ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) : null) ;
+              Attributes.ORIGIN = ((!SelfInd && ["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.custom_field_label : null);
               Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
+              Attributes.DISPLAY_POP_ASSIGNEE = ((Attributes.ASSIGNEE === null) ? 'none' : 'flex');
+			  Attributes.DISPLAY_POP_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
+              Attributes.DISPLAY_POP_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
+              Attributes.DISPLAY_POP_TYPE = ((Attributes.TYPE === null) ? 'none' : 'flex');
+			  Attributes.DISPLAY_POP_TYPE_LABEL = 'Betreft';
+              Attributes.DISPLAY_POP_ORIGIN = ((Attributes.ORIGIN === null) ? 'none' : 'flex');
+			  Attributes.DISPLAY_POP_DETAILS = ((Attributes.ASSIGNEE === null && Attributes.REQUESTOR === null && Attributes.LOCATION_DESCRIPTION === null && Attributes.TYPE === null) ? 'none' : 'block');
 		    } else {
 			  Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
 			}
