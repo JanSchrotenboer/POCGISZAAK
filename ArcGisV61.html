@@ -207,7 +207,8 @@
 			  { name: "ASSIGNEE", type: "string" },
 			  { name: "REQUESTOR", type: "string" },
 			  { name: "LOCATION_DESCRIPTION", type: "string" },
-			  { name: "STATUS", type: "string" }
+			  { name: "STATUS", type: "string" },
+			  { name: "ICON", type: "string" }
             ],
             geometryType: GeometryType,
             spatialReference: { wkid: 4326 },
@@ -218,7 +219,7 @@
 			},
 			//popupEnabled: false,
             popupTemplate: {
-              title: "<div style='display: flex;  width: 100%; margin: 0; padding: 0px;'><div style='width: 26px; height: 10px; text-align: left; padding-right: 2px; flex-shrink: 0;'>	 <img src='https://janschrotenboer.github.io/POCGISZAAK/IconZaak.png' height='20px'> </div> <div style='width: 100%; height: 10px; font-size: 15px; color: #1B73E7; font-weight: 600; text-align: left; white-space: normal; padding: 2px 0px 0px 1px;'><a style='color: #1B73E7; text-decoration: none;' href='{URL}' target='_blank' >{TITLE}</a></div> </div>",
+              title: "<div style='display: flex;  width: 100%; margin: 0; padding: 0px;'><div style='height: 10px; text-align: left; padding-right: 3px; flex-shrink: 0;'>	 <img src='https://janschrotenboer.github.io/POCGISZAAK/Icon{ICON}.png' height='20px'> </div> <div style='width: 100%; margin-bottom: -5px; font-size: 15px; color: #1B73E7; font-weight: 600; text-align: left; white-space: normal; padding: 2px 0px 0px 1px;'><a style='color: #1B73E7; text-decoration: none;' href='{URL}' target='_blank' >{TITLE}</a></div> </div>",
 			  content: "<div style='width: 100%; font-size: 12px;'><div style='color: #999;'>{SUBTITLE}</div><div style='margin-top: 2px; padding-top: 2px; border-top: 1px solid black;'><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Type</div><div style='padding-left: 5px;'>{TYPE}</div></div><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Aanvrager</div><div style='padding-left: 5px;'>{REQUESTOR}</div></div><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Behandelaar</div><div style='padding-left: 5px;'>{ASSIGNEE}</div></div><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Locatie</div><div style='padding-left: 5px;'>{ORIGIN}</div></div><div style='display: flex; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Adres</div><div style='padding-left: 5px;'>{LOCATION_DESCRIPTION}</div></div></div></div>"
             },
 			labelingInfo: [labelClass],
@@ -541,8 +542,8 @@
 		// Functie om properties uit zaaksysteem om te zetten naar Esri attributes
 		// Deze functie kan vereenvoudigd worden als de properties vanuit zaaksysteem goed meegestuurd worden
 		function AttibutesFromGeoJsonProperties (Properties) {
-		  console.log('host'+window.location.protocol + "//" + window.location.host);
-		  console.log('name: '+name);
+		  //console.log('host'+window.location.protocol + "//" + window.location.host);
+		  //console.log('name: '+name);
 		  var Attributes = {};
 		  //if (Properties !== undefined) {
 		    //var Host = window.parent.location.protocol + "//" + window.parent.location.host;
@@ -552,7 +553,7 @@
 			    var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
 		        Attributes.ID = ((Properties.zaaksysteem.self.id !==  undefined) ? Properties.zaaksysteem.self.id : null);
 			    Attributes.TYPE = ((Properties.zaaksysteem.self.caseType !==  undefined) ? Properties.zaaksysteem.self.caseType : null);
-			    Attributes.ICON = ( Properties.zaaksysteem.self.family) ;
+			    Attributes.ICON = ( Properties.zaaksysteem.self.family.toUpperCase()) ;
 			    Attributes.STATUS = Properties.zaaksysteem.self.status ;
 			    Attributes.FAMILY = Properties.zaaksysteem.self.family ;
 			    Attributes.TITLE = ((Properties.zaaksysteem.self.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.self.caseNumber : Properties.zaaksysteem.self.title);
@@ -574,7 +575,7 @@
 		      console.log('selfind '+Properties.zaaksysteem.origin.family+':'+SelfInd+' number:'+config.context.data.case.number+' title:'+Properties.zaaksysteem.origin.title);
 			  Attributes.ID = Properties.zaaksysteem.origin.identifier ;
 			  Attributes.TYPE = ( !SelfInd ? Properties.zaaksysteem.origin.type : null);
-			  Attributes.ICON = ( SelfInd ? 'location' : Properties.zaaksysteem.origin.family) ;
+			  Attributes.ICON = ( SelfInd ? 'MARKER' : Properties.zaaksysteem.origin.family.toUpperCase()) ;
 			  Attributes.STATUS = Properties.zaaksysteem.origin.status ;
 			  Attributes.FAMILY = Properties.zaaksysteem.origin.family ;
 			  Attributes.TITLE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.origin.title : ((Properties.zaaksysteem.origin.family === 'object') ? Properties.zaaksysteem.origin.title : Properties.zaaksysteem.origin.name)) : Properties.zaaksysteem.origin.custom_field_label );
