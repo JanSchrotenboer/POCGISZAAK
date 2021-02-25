@@ -499,7 +499,7 @@
 			  var graphicje = Graphic.fromJSON(featuretje);
 			  GraphicsZoom.push (graphicje);
 			  console.log('Properties GeoJSON: '+JSON.stringify(FeatureProperties));			  
-			  graphicje.attributes = ((FeatureProperties) ? AttibutesFromGeoJsonProperties (FeatureProperties) : null);
+			  graphicje.attributes = ((FeatureProperties !== null) ? AttibutesFromGeoJsonProperties (FeatureProperties) : null);
 			  console.log('Graphicje to push: '+JSON.stringify(graphicje));
 			  projection.load().then(function(evt) {
 			    graphicje.geometry = projection.project(graphicje.geometry,view.spatialReference);
@@ -572,6 +572,13 @@
 			    Attributes.LOCATION_DESCRIPTION = ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null);
                 Attributes.ORIGIN = ( SelfInd ? ((Properties.zaaksysteem.origin.custom_field_label !==  undefined) ? Properties.zaaksysteem.origin.custom_field_label : null) : ((Properties.zaaksysteem.origin.family ===  'object') ? Properties.zaaksysteem.origin.type + ' - ' + Properties.zaaksysteem.origin.title : Properties.zaaksysteem.origin.family)) ;
                 Attributes.WF_LABEL = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.caseNumber : null);
+                Attributes.DISPLAY_POP_ASSIGNEE = ((Attributes.ASSIGNEE === null) ? 'none' : 'flex');
+			    Attributes.DISPLAY_POP_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
+                Attributes.DISPLAY_POP_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
+                Attributes.DISPLAY_POP_TYPE = ((Attributes.TYPE === null) ? 'none' : 'flex');
+			    Attributes.POP_TYPE_LABEL = 'Type';
+                Attributes.DISPLAY_POP_ORIGIN = ((Attributes.ORIGIN === null) ? 'none' : 'flex');
+			    Attributes.DISPLAY_POP_DETAILS = ((Attributes.ASSIGNEE === null && Attributes.REQUESTOR === null && Attributes.LOCATION_DESCRIPTION === null && Attributes.TYPE === null) ? 'none' : 'block');
 			  }
 			  catch(err) {
                 console.log('error: '+err);
@@ -598,7 +605,7 @@
 			  Attributes.DISPLAY_POP_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
               Attributes.DISPLAY_POP_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
               Attributes.DISPLAY_POP_TYPE = ((Attributes.TYPE === null) ? 'none' : 'flex');
-			  Attributes.DISPLAY_POP_TYPE_LABEL = 'Betreft';
+			  Attributes.POP_TYPE_LABEL = 'Betreft';
               Attributes.DISPLAY_POP_ORIGIN = ((Attributes.ORIGIN === null) ? 'none' : 'flex');
 			  Attributes.DISPLAY_POP_DETAILS = ((Attributes.ASSIGNEE === null && Attributes.REQUESTOR === null && Attributes.LOCATION_DESCRIPTION === null && Attributes.TYPE === null) ? 'none' : 'block');
 		    } else {
