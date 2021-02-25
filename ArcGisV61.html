@@ -355,6 +355,8 @@
 			  CopyGraphicsToLabelLayer();	
 		      // En nu nog even inzoomen op de graphics
 		      view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+			  //view.goTo(GraphicsZoom);
+			  console.log('Hier gaat ie zoomen');
 		      view.goTo(graphicsLayer.graphics);
 	        });
           };		  
@@ -426,12 +428,16 @@
 		/////////////////////////////////SET FEATURE ///////////////////////////////////////
 
         function setFeature (GeoJson) {
+		  view.when(function() {
 		  GeoJsonToGraphics (GeoJson);
 		  addFeaturesToLayers();
 		  // En nu nog even inzoomen op de graphics
 		  // Als er meer graphics achter elkaar toegevoegd worden is dit ongewenst, vandaar uitgeschakeld
-		  view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
-		  view.goTo(GraphicsZoom);
+		  
+		    view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		    view.goTo(GraphicsZoom);
+		    console.log('Hier gaat zoomen goed, graphics: '+JSON.stringify(GraphicsZoom));
+		  })
 		};
 		
  		function addFeaturesToLayers() {
@@ -558,6 +564,10 @@
 			var Host = 'http://development.zaaksysteem.nl';
 		    if (name === 'advancedSearchMap') {
 			  try {
+			    //tijdelijke oplossing voor ontbrekende self bij uitgebreid zoeken, if-then-else kan dus straks weer weg
+			    if (!Properties.zaaksysteem.self) {
+				  Properties.zaaksysteem.self = Properties.zaaksysteem.origin;
+				}
 			    var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
 		        Attributes.ID = ((Properties.zaaksysteem.self.id !==  undefined) ? Properties.zaaksysteem.self.id : null);
 			    Attributes.TYPE = ((Properties.zaaksysteem.self.caseType !==  undefined) ? Properties.zaaksysteem.self.caseType : null);
@@ -566,7 +576,7 @@
 			    Attributes.FAMILY = Properties.zaaksysteem.self.family ;
 			    Attributes.TITLE = ((Properties.zaaksysteem.self.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.self.caseNumber : Properties.zaaksysteem.self.title);
 			    Attributes.SUBTITLE = ((Properties.zaaksysteem.self.subtitle !==  undefined) ? Properties.zaaksysteem.self.subtitle : null);
-			    Attributes.URL = Host+((Properties.zaaksysteem.self.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.self.caeNumber : ((Properties.zaaksysteem.self.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.self.id);
+			    Attributes.URL = Host+((Properties.zaaksysteem.self.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.self.caseNumber : ((Properties.zaaksysteem.self.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.self.id);
 			    Attributes.ASSIGNEE = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.assignee :  null);
 			    Attributes.REQUESTOR = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.requestor :  null);
 			    Attributes.LOCATION_DESCRIPTION = ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null);
