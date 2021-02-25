@@ -540,7 +540,7 @@
 		  console.log('host'+window.location.protocol + "//" + window.location.host);
 		  console.log('name: '+name);
 		  var Attributes = {};
-		  if (Properties !== undefined) {
+		  if (Properties !== undefined || Properties === null) {
 		    //var Host = window.parent.location.protocol + "//" + window.parent.location.host;
 			var Host = 'http://development.zaaksysteem.nl';
 		    if (name === 'advancedSearchMap') {
