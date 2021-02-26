@@ -44,7 +44,7 @@
 	let WFPointSymbol = { type: "simple-marker", style: "circle", color: [ 255,255, 255, 0.7 ],  size: "12px",  outline: {  color: "red", width: 2 }};
 	let WFFillSymbol = { type: "simple-fill",  color: [ 255,255, 255, 0.7 ], style: "solid", outline: {  color: "red",  width: 2 }};
 	let WFLineSymbol = { type: "simple-line",  color: "red", width: 2, style: "solid"};
-    let NoPointSymbol = { type: "simple-marker", size: 0};
+    let WFEmptySymbol = { type: "simple-marker", size: 0};
 	let labelClass = { symbol: { type: "text", color: "black", haloColor: "white", haloSize: "3px", font: { size: 11}}, labelPlacement: "below-center", labelExpressionInfo: { expression: "$feature.WF_LABEL" }};
 	let map;
     let config;
@@ -159,7 +159,7 @@
 		function openGeoweb(){
           projection.load().then(function(evt) {
             var centerGeoweb = projection.project(view.center, {"latestWkid":28992,"wkid": 28992});
-            var geowebUrl = 'https://gis.wetterskipfryslan.nl/WebViewer/index.html?viewer=Vergunningverlening_en_Handhaving.Vergunningverlening_en_Handhaving&scale='+view.scale+'&center='+centerGeoweb.x+','+centerGeoweb.y;
+            var geowebUrl = 'https://gis.wetterskipfryslan.nl/WebViewer/index.html?viewer=Vergunningverlening_en_Handhaving.Vergunningverlening_en_Handhaving&scale='+((view.scale > 280000) ? '280000' : view.scale )+'&center='+centerGeoweb.x+','+centerGeoweb.y;
  		    window.open(geowebUrl, "_blank");
 		  });
         }
@@ -247,7 +247,7 @@
 		// Tekenlaag toevoegen + LabelLayer
 		graphicsLayer = new GraphicsLayer({listMode : "hide"});  
 		map.add(graphicsLayer,0);
-		const LayerLabels = DefineFeatureLayer ('Labels','point',NoPointSymbol);
+		const LayerLabels = DefineFeatureLayer ('Labels','point',WFEmptySymbol);
 		map.add(LayerLabels,0);
 		
 		console.log('Layers: '+JSON.stringify(map.layers[0]));
@@ -429,11 +429,14 @@
 
         function setFeature (GeoJson) {
 		  view.when(function() {
-		  GeoJsonToGraphics (GeoJson);
-		  addFeaturesToLayers();
-		  // En nu nog even inzoomen op de graphics
-		  // Als er meer graphics achter elkaar toegevoegd worden is dit ongewenst, vandaar uitgeschakeld
-		  
+		    //Eerst bestaande features verwijderen
+			removeFeaturesFromLayer(LayerZaakLijn);
+			removeFeaturesFromLayer(LayerZaakVlak);
+			removeFeaturesFromLayer(LayerZaakPunt);
+			//En de nieuwe erop
+		    GeoJsonToGraphics (GeoJson);
+		    addFeaturesToLayers();
+		    // En nu nog even inzoomen op de graphics
 		    view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
 		    view.goTo(GraphicsZoom);
 		    console.log('Hier gaat zoomen goed, graphics: '+JSON.stringify(GraphicsZoom));
@@ -441,12 +444,15 @@
 		};
 		
  		function addFeaturesToLayers() {
-          const addEditsLijn = { addFeatures: GraphicsLijn };
-          const addEditsVlak = { addFeatures: GraphicsVlak };
-          const addEditsPunt = { addFeatures: GraphicsPunt };	
-		  LayerZaakLijn.applyEdits(addEditsLijn);
-		  LayerZaakVlak.applyEdits(addEditsVlak);
-		  LayerZaakPunt.applyEdits(addEditsPunt);
+		  LayerZaakLijn.applyEdits({ addFeatures: GraphicsLijn });
+		  LayerZaakVlak.applyEdits({ addFeatures: GraphicsVlak });
+		  LayerZaakPunt.applyEdits({ addFeatures: GraphicsPunt });
+        }
+		
+		function removeFeaturesFromLayer ( Layer ) {
+          Layer.queryFeatures().then(function(results){
+		    Layer.applyEdits({deleteFeatures: results.features });
+          });
         }
 		
         // Listener for setFeature
