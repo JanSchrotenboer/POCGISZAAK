@@ -625,6 +625,7 @@
 			    Attributes.REND_VALUE = ( (["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.family : 'subject' );
 		      } else if ( ["CaseMap", "ObjectMap"].includes(config.context.type) ) {
 		        //Indicatie voor als het een kenmerk van het betreffende object/zaak betreft
+				console.log('CaseMap/ObjectMap Properties worden geladen');
 		        var SelfInd = ((config.context.data.case !==  undefined) ? (config.context.data.case.number.toString() === Properties.zaaksysteem.origin.title) : (config.context.data.object.uuid === Properties.zaaksysteem.origin.identifier));
 		        console.log('selfind '+Properties.zaaksysteem.origin.family+':'+SelfInd+' number:'+config.context.data.case.number+' title:'+Properties.zaaksysteem.origin.title);
 			    Attributes.ID = Properties.zaaksysteem.origin.identifier ;
@@ -650,6 +651,7 @@
 			    Attributes.REND_VALUE = Attributes.REND_VALUE = ( (["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.family : 'subject' );
 		      } else {
 			    Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
+				console.log('Alleen label properties wordt geladen');
 			  }
 			}
 			catch(err) {
