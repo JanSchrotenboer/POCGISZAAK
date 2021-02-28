@@ -52,6 +52,7 @@
 	let map;
     let config;
     let name;
+	let host;
 	let MessageVersion = 5;
 	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 6.1';
 
@@ -248,14 +249,12 @@
 		  RendererValuesPunt.push( { value: "case", symbol: createSymbol('marker', WFBaseColorCase), label: "Zaak" } );
 		  RendererValuesPunt.push( { value: "object", symbol: createSymbol('marker', WFBaseColorObject), label: "Object" } );
 		  RendererValuesPunt.push( { value: "subject", symbol: createSymbol('marker', WFBaseColorSubject), label: "Subject" } );
-		  RendererValuesLijn.push( { value: "case", symbol: createSymbol('marker', WFBaseColorCase), label: "Zaak" } );
-		  RendererValuesLijn.push( { value: "object", symbol: createSymbol('marker', WFBaseColorObject), label: "Object" } );
-		  RendererValuesLijn.push( { value: "subject", symbol: createSymbol('marker', WFBaseColorSubject), label: "Subject" } );
-		  RendererValuesVlak.push( { value: "case", symbol: createSymbol('marker', WFBaseColorCase), label: "Zaak" } );
-		  RendererValuesVlak.push( { value: "object", symbol: createSymbol('marker', WFBaseColorObject), label: "Object" } );
-		  RendererValuesVlak.push( { value: "subject", symbol: createSymbol('marker', WFBaseColorSubject), label: "Subject" } );
-		  console.log('Rend Values Punt'+JSON.stringify(RendererValuesPunt));
-		  
+		  RendererValuesLijn.push( { value: "case", symbol: createSymbol('line', WFBaseColorCase), label: "Zaak" } );
+		  RendererValuesLijn.push( { value: "object", symbol: createSymbol('line', WFBaseColorObject), label: "Object" } );
+		  RendererValuesLijn.push( { value: "subject", symbol: createSymbol('line', WFBaseColorSubject), label: "Subject" } );
+		  RendererValuesVlak.push( { value: "case", symbol: createSymbol('fill', WFBaseColorCase), label: "Zaak" } );
+		  RendererValuesVlak.push( { value: "object", symbol: createSymbol('fill', WFBaseColorObject), label: "Object" } );
+		  RendererValuesVlak.push( { value: "subject", symbol: createSymbol('fill', WFBaseColorSubject), label: "Subject" } );
         }
 
         // Symbol creeren voor renderer
@@ -294,17 +293,14 @@
 		const LayerLabels = DefineFeatureLayer ('Labels','point',createRenderer(WFEmptySymbol));
 		map.add(LayerLabels,0);
 		
-		console.log('Layers: '+JSON.stringify(map.layers[0]));
-	
-		
 		////////////////FEATURE TEKENCOMONENT TOEVOEGEN EN FULL SCREEN /////////////////////
 
         window.addEventListener('message', event => {
           if (event.data.type === 'init') {
             config = event.data.value;
             name = event.data.name;
+			host = event.origin;
 		    console.log('Init: '+JSON.stringify(event.data));
-            console.log('Origin: '+ JSON.stringify(event.origin));
             initMap();
           }
         });
@@ -361,7 +357,6 @@
 			  } else if (event.state === 'complete' && event.type === 'update') {
 				document.getElementById("labelform").classList.add("esri-hidden");
 				event.graphics[0].attributes = { "WF_LABEL": document.getElementById("GraphicLabel").value };
-				console.log('Labelform verbergen - event: '+JSON.stringify(event));
                 CopyGraphicsToLabelLayer();				
               }
 			  // En featureChange sturen
@@ -379,7 +374,6 @@
           /////////////////////INTITIELE WAARDE OP DE KAART ZETTEN ///////////////////////////		
 
 		  //Initial value GeoJSON op kaart zetten
-          console.log ('Initial Feature'+JSON.stringify(config.initialFeature))		  
 		  if (config.initialFeature) {
   		    if (name === 'advancedSearchMap' || ["CaseMap", "ObjectMap"].includes(((config.context.type !==  undefined) ? config.context.type : null))) {
 			  setFeature (config.initialFeature)
@@ -390,7 +384,6 @@
 		  
 		  // GeoJSON op Graphicslayer voor tekenen of kenmerkgeometrie tonen  
 		  function GeoJsonToGraphicsLayer() {
-		    console.log('GeoJsonToGraphicsLayer');
             view.when(function() {
 		      GeoJsonToGraphics (config.initialFeature); 
 		      graphicsLayer.addMany(GraphicsPunt);
@@ -400,7 +393,6 @@
 		      // En nu nog even inzoomen op de graphics
 		      view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
 			  //view.goTo(GraphicsZoom);
-			  console.log('Hier gaat ie zoomen');
 		      view.goTo(graphicsLayer.graphics);
 	        });
           };		  
@@ -430,7 +422,6 @@
 		/////////////////////////////////FEATURE CHANGE ////////////////////////////////////
 		
 		function featureChange () {
-		  console.log('Features ESRI: '+JSON.stringify(graphicsLayer.graphics)); // kan weer weg
 		  GraphicsToGeoJson (graphicsLayer.graphics);
 		  console.log('Send featureChange - value: '+JSON.stringify(GeoJsonFeatures));
           window.top.postMessage({
@@ -455,7 +446,7 @@
 		function CopyGraphicsToLabelLayer() {
 		  GraphicsPunt = [];
 		  graphicsLayer.graphics.forEach(function(graphic) {
-		    console.log('Properties bij kopie: '+JSON.stringify(graphic.attributes));
+		    console.log('Properties bij kopie: '+JSON.stringify(graphic.attributes)); //kan weer weg
 		    var graphicje = [];
 		    if (graphic.geometry.rings !== undefined) { 
 			  const centroid = new Graphic({geometry: graphic.geometry.centroid, attributes: graphic.attributes});
@@ -483,7 +474,6 @@
 		    // En nu nog even inzoomen op de graphics
 		    view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
 		    view.goTo(GraphicsZoom);
-		    console.log('Hier gaat zoomen goed, graphics: '+JSON.stringify(GraphicsZoom));
 		  })
 		};
 		
@@ -522,12 +512,10 @@
 		function setMarker(GraphicsMarker){
           view.graphics.removeAll();
 		  GraphicsMarker.forEach(function(element) { 
-		    console.log('setMarkertje: '+JSON.stringify(element));
 			view.graphics.add(element);
 			//projection nodig om te zoomen naar de juiste locatie
 		    var ZoomGeometry = projection.project(element.geometry, view.spatialReference);
 			view.goTo({target:ZoomGeometry, zoom: 13}, { duration: 800 });
-			console.log('na GoTo: '+JSON.stringify(element));
 		  });
         }
        
@@ -554,9 +542,7 @@
 			  var featuretje = { geometry: geometrietje };
 			  var graphicje = Graphic.fromJSON(featuretje);
 			  GraphicsZoom.push (graphicje);
-			  console.log('Properties GeoJSON: '+JSON.stringify(FeatureProperties));			  
 			  graphicje.attributes = ((FeatureProperties !== null) ? AttibutesFromGeoJsonProperties (FeatureProperties) : null);
-			  console.log('Graphicje to push: '+JSON.stringify(graphicje));
 			  projection.load().then(function(evt) {
 			    graphicje.geometry = projection.project(graphicje.geometry,view.spatialReference);
               });
@@ -571,7 +557,6 @@
           // clonen graphics zodat ze losgekoppeld worden van de kaart
 		  var GraphicsClone = [];
 		  Graphics.forEach(function(graphicje) {
-		    console.log('attributjes'+JSON.stringify(graphicje.attributes));
 		    var GraphicClone = new Graphic({ geometry: projection.project(graphicje.geometry, {"wkid": 4326}), 
 			                                 attributes: graphicje.attributes, 
 											 symbol:graphicje.symbol
@@ -605,20 +590,16 @@
 		// Functie om properties uit zaaksysteem om te zetten naar Esri attributes
 		// Deze functie kan vereenvoudigd worden als de properties vanuit zaaksysteem goed meegestuurd worden
 		function AttibutesFromGeoJsonProperties (Properties) {
-		  //console.log('host'+window.location.protocol + "//" + window.location.host);
-		  //console.log('name: '+name);
-		  console.log('setMarkertje: '+JSON.stringify(Properties));
+		  console.log('Properties: '+JSON.stringify(Properties));
 		  var Attributes = {};
-		  //if (Properties !== undefined) {
-		    //var Host = window.parent.location.protocol + "//" + window.parent.location.host;
-			var Host = 'http://development.zaaksysteem.nl';
-		    if (name === 'advancedSearchMap') {
-			  try {
-			    //tijdelijke oplossing voor ontbrekende self bij uitgebreid zoeken, if-then-else kan dus straks weer weg
-			    if (!Properties.zaaksysteem.self) {
-				  Properties.zaaksysteem.self = Properties.zaaksysteem.origin;
-				}
-			    var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
+		  if (Properties !== undefined) {
+		    try {
+		      if (name === 'advancedSearchMap') {
+			    //tijdelijke lelijke oplossing voor ontbrekende self en origin bij uitgebreid zoeken, 2 if-then-else-jes hierna moeten dus straks weer weg
+			    if (!Properties.zaaksysteem.self) { Properties.zaaksysteem.self = Properties.zaaksysteem.origin;}
+				if (Properties.zaaksysteem.origin === null) { Properties.zaaksysteem.origin = Properties.zaaksysteem.self;}
+			    //Indicatie voor als het een kenmerk van het betreffende object/zaak betreft
+				var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
 		        Attributes.ID = ((Properties.zaaksysteem.self.id !==  undefined) ? Properties.zaaksysteem.self.id : null);
 			    Attributes.TYPE = ((Properties.zaaksysteem.self.caseType !==  undefined) ? Properties.zaaksysteem.self.caseType : null);
 			    Attributes.ICON = ( Properties.zaaksysteem.self.family.toUpperCase()) ;
@@ -626,7 +607,7 @@
 			    Attributes.FAMILY = Properties.zaaksysteem.self.family ;
 			    Attributes.TITLE = ((Properties.zaaksysteem.self.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.self.caseNumber : Properties.zaaksysteem.self.title);
 			    Attributes.SUBTITLE = ((Properties.zaaksysteem.self.subtitle !==  undefined) ? Properties.zaaksysteem.self.subtitle : null);
-			    Attributes.URL = Host+((Properties.zaaksysteem.self.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.self.caseNumber : ((Properties.zaaksysteem.self.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.self.id);
+			    Attributes.URL = host+((Properties.zaaksysteem.self.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.self.caseNumber : ((Properties.zaaksysteem.self.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.self.id);
 			    Attributes.ASSIGNEE = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.assignee :  null);
 			    Attributes.REQUESTOR = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.requestor :  null);
 			    Attributes.LOCATION_DESCRIPTION = ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null);
@@ -639,41 +620,41 @@
 			    Attributes.POP_TYPE_LABEL = 'Type';
                 Attributes.POP_DISPLAY_ORIGIN = ((Attributes.ORIGIN === null) ? 'none' : 'flex');
 			    Attributes.POP_DISPLAY_DETAILS = ((Attributes.ASSIGNEE === null && Attributes.REQUESTOR === null && Attributes.LOCATION_DESCRIPTION === null && Attributes.TYPE === null) ? 'none' : 'block');
-			    Attributes.REND_VALUE = 'case';
+			    Attributes.REND_VALUE = ( (["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.family : 'subject' );
+		      } else if ( ["CaseMap", "ObjectMap"].includes(config.context.type) ) {
+		        //Indicatie voor als het een kenmerk van het betreffende object/zaak betreft
+		        var SelfInd = ((config.context.data.case !==  undefined) ? (config.context.data.case.number.toString() === Properties.zaaksysteem.origin.title) : (config.context.data.object.uuid === Properties.zaaksysteem.origin.identifier));
+		        console.log('selfind '+Properties.zaaksysteem.origin.family+':'+SelfInd+' number:'+config.context.data.case.number+' title:'+Properties.zaaksysteem.origin.title);
+			    Attributes.ID = Properties.zaaksysteem.origin.identifier ;
+			    Attributes.TYPE = ( !SelfInd ? ((["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.type : 'Betrokkene') : null);
+			    Attributes.ICON = ( SelfInd ? 'MARKER' : Properties.zaaksysteem.origin.family.toUpperCase()) ;
+			    Attributes.STATUS = Properties.zaaksysteem.origin.status ;
+			    Attributes.FAMILY = Properties.zaaksysteem.origin.family ;
+			    Attributes.TITLE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.origin.title : ((Properties.zaaksysteem.origin.family === 'object') ? Properties.zaaksysteem.origin.title : Properties.zaaksysteem.origin.name)) : Properties.zaaksysteem.origin.custom_field_label );
+			    Attributes.SUBTITLE = ( !SelfInd ? ((Properties.zaaksysteem.origin.subtitle !==  undefined) ? Properties.zaaksysteem.origin.subtitle : ((Properties.zaaksysteem.origin.address !==  undefined) ? Properties.zaaksysteem.origin.address : null)) : ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) ) ;
+			    Attributes.URL = host+((Properties.zaaksysteem.origin.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.origin.title : ((Properties.zaaksysteem.origin.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.origin.identifier) ;
+			    Attributes.ASSIGNEE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.assignee :  null) : null );
+			    Attributes.REQUESTOR = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.requestor :  null) : null ) ;
+			    Attributes.LOCATION_DESCRIPTION = ( !SelfInd ? ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) : null) ;
+                Attributes.ORIGIN = ((!SelfInd && ["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.custom_field_label : null);
+                Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
+                Attributes.POP_DISPLAY_ASSIGNEE = ((Attributes.ASSIGNEE === null) ? 'none' : 'flex');
+			    Attributes.POP_DISPLAY_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
+                Attributes.POP_DISPLAY_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
+                Attributes.POP_DISPLAY_TYPE = ((Attributes.TYPE === null) ? 'none' : 'flex');
+			    Attributes.POP_TYPE_LABEL = 'Betreft';
+                Attributes.POP_DISPLAY_ORIGIN = ((Attributes.ORIGIN === null) ? 'none' : 'flex');
+			    Attributes.POP_DISPLAY_DETAILS = ((Attributes.ASSIGNEE === null && Attributes.REQUESTOR === null && Attributes.LOCATION_DESCRIPTION === null && Attributes.TYPE === null) ? 'none' : 'block');
+			    Attributes.REND_VALUE = Attributes.REND_VALUE = ( (["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.family : 'subject' );
+		      } else {
+			    Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
 			  }
-			  catch(err) {
-                console.log('error: '+err);
-              }
-		    } else if ( ["CaseMap", "ObjectMap"].includes(config.context.type) ) {
-			  console.log('voor kenmerken aanmaken');
-		      //Indicatie voor als het een kenmerk van het betreffende object/zaak betreft
-		      var SelfInd = ((config.context.data.case !==  undefined) ? (config.context.data.case.number.toString() === Properties.zaaksysteem.origin.title) : (config.context.data.object.uuid === Properties.zaaksysteem.origin.identifier));
-		      console.log('selfind '+Properties.zaaksysteem.origin.family+':'+SelfInd+' number:'+config.context.data.case.number+' title:'+Properties.zaaksysteem.origin.title);
-			  Attributes.ID = Properties.zaaksysteem.origin.identifier ;
-			  Attributes.TYPE = ( !SelfInd ? ((["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.type : 'Betrokkene') : null);
-			  Attributes.ICON = ( SelfInd ? 'MARKER' : Properties.zaaksysteem.origin.family.toUpperCase()) ;
-			  Attributes.STATUS = Properties.zaaksysteem.origin.status ;
-			  Attributes.FAMILY = Properties.zaaksysteem.origin.family ;
-			  Attributes.TITLE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.origin.title : ((Properties.zaaksysteem.origin.family === 'object') ? Properties.zaaksysteem.origin.title : Properties.zaaksysteem.origin.name)) : Properties.zaaksysteem.origin.custom_field_label );
-			  Attributes.SUBTITLE = ( !SelfInd ? ((Properties.zaaksysteem.origin.subtitle !==  undefined) ? Properties.zaaksysteem.origin.subtitle : ((Properties.zaaksysteem.origin.address !==  undefined) ? Properties.zaaksysteem.origin.address : null)) : ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) ) ;
-			  Attributes.URL = Host+((Properties.zaaksysteem.origin.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.origin.title : ((Properties.zaaksysteem.origin.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.origin.identifier) ;
-			  Attributes.ASSIGNEE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.assignee :  null) : null );
-			  Attributes.REQUESTOR = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.requestor :  null) : null ) ;
-			  Attributes.LOCATION_DESCRIPTION = ( !SelfInd ? ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) : null) ;
-              Attributes.ORIGIN = ((!SelfInd && ["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.custom_field_label : null);
-              Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
-              Attributes.POP_DISPLAY_ASSIGNEE = ((Attributes.ASSIGNEE === null) ? 'none' : 'flex');
-			  Attributes.POP_DISPLAY_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
-              Attributes.POP_DISPLAY_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
-              Attributes.POP_DISPLAY_TYPE = ((Attributes.TYPE === null) ? 'none' : 'flex');
-			  Attributes.POP_TYPE_LABEL = 'Betreft';
-              Attributes.POP_DISPLAY_ORIGIN = ((Attributes.ORIGIN === null) ? 'none' : 'flex');
-			  Attributes.POP_DISPLAY_DETAILS = ((Attributes.ASSIGNEE === null && Attributes.REQUESTOR === null && Attributes.LOCATION_DESCRIPTION === null && Attributes.TYPE === null) ? 'none' : 'block');
-			  Attributes.REND_VALUE = 'case';
-		    } else {
-			  Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
 			}
-		  //}
+			catch(err) {
+              console.log('Error Attributes: '+err);
+            }
+		  }
+		  console.log('Attributes: '+JSON.stringify(Attributes));
    	      return Attributes;
 		}
 
