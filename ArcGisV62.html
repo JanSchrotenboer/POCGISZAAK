@@ -626,7 +626,7 @@
 		      } else if ( ["CaseMap", "ObjectMap"].includes(config.context.type) ) {
 		        //Indicatie voor als het een kenmerk van het betreffende object/zaak betreft
 				console.log('CaseMap/ObjectMap Properties worden geladen');
-		        var SelfInd = ((config.context.data.object !==  undefined) ? (config.context.data.object.uuid === Properties.zaaksysteem.origin.identifier) : (config.context.data.case.number.toString() === Properties.zaaksysteem.origin.title));
+		        var SelfInd = ((config.context.data.object !==  undefined) ? (config.context.data.object.versionIndependentUuid === Properties.zaaksysteem.origin.identifier) : (config.context.data.case.number.toString() === Properties.zaaksysteem.origin.title));
 		        //console.log('selfind '+Properties.zaaksysteem.origin.family+':'+SelfInd+' number:'+config.context.data.case.number+' title:'+Properties.zaaksysteem.origin.title);
 			    Attributes.ID = Properties.zaaksysteem.origin.identifier ;
 			    Attributes.TYPE = ( !SelfInd ? ((["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.type : 'Betrokkene') : null);
