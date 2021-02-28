@@ -510,13 +510,15 @@
         });
 		
 		function setMarker(GraphicsMarker){
-          view.graphics.removeAll();
-		  GraphicsMarker.forEach(function(element) { 
-			view.graphics.add(element);
-			//projection nodig om te zoomen naar de juiste locatie
-		    var ZoomGeometry = projection.project(element.geometry, view.spatialReference);
-			view.goTo({target:ZoomGeometry, zoom: 13}, { duration: 800 });
-		  });
+		  view.when(function() {
+            view.graphics.removeAll();
+		    GraphicsMarker.forEach(function(element) { 
+			  view.graphics.add(element);
+			  //projection nodig om te zoomen naar de juiste locatie
+		      var ZoomGeometry = projection.project(element.geometry, view.spatialReference);
+			  view.goTo({target:ZoomGeometry, zoom: 13}, { duration: 800 });
+		    });
+		  }
         }
        
 		///////////////////////////// FUNCTIES VOOR TRANSFORMATIE /////////////////////////
