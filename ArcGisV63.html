@@ -644,7 +644,7 @@
 			    Attributes.REQUESTOR = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.requestor :  null) : null ) ;
 			    Attributes.LOCATION_DESCRIPTION = ( !SelfInd ? ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) : null) ;
                 Attributes.ORIGIN = ((!SelfInd && ["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.custom_field_label : null);
-                Attributes.WF_LABEL = ( (["CASE", "OBJECT"].includes(Attributes.FAMILY)) ? ((Properties.zaaksysteem.origin.custom_field_label !== undefined) ? Properties.zaaksysteem.origin.custom_field_label + '<br/>' : null) : Attributes.TITLE + '<br/>') + ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null);
+                Attributes.WF_LABEL = ( (["case", "object"].includes(Attributes.FAMILY)) ? ((Properties.zaaksysteem.origin.custom_field_label !== undefined) ? Properties.zaaksysteem.origin.custom_field_label + '<br>' : '') : Attributes.TITLE + '<br>') + ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : '');
                 Attributes.POP_DISPLAY_ASSIGNEE = ((Attributes.ASSIGNEE === null) ? 'none' : 'flex');
 			    Attributes.POP_DISPLAY_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
                 Attributes.POP_DISPLAY_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
