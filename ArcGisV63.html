@@ -112,7 +112,6 @@
 		
 		const map = new WebMap({
           portalItem: {
-            // autocasts as new PortalItem()
             id: "28cad4ab8fb84b2092aaca49ca21d3c2", 
 			
 			//28cad4ab8fb84b2092aaca49ca21d3c2 - productie legger zonder inlog
@@ -136,6 +135,7 @@
           map: map,
 		  center: [5.9, 53.1],
           zoom: 4,
+		  constraints: { maxZoom: 14 }, // anders problemen met tegels
 		  popup: {
             dockEnabled: true,
 			collapseEnabled: false,
@@ -201,10 +201,10 @@
 		
 		////////////////////////////// EMPTY LAYERS EN TEKENLAAG TOEVOEGEN //////////////////////////////
 
-		function DefineFeatureLayer (Title,GeometryType,Renderer) {
-		  //var LabelClassLayer = labelClass;
-		  //LabelClassLayer.labelPlacement = (( GeometryType === 'point' ) ? 'above-center' : (( GeometryType === 'polygon' ) ? 'always-horizontal' : 'always-horizontal')); 
-          var LayerDef = new FeatureLayer({
+		function DefineFeatureLayer (Title,GeometryType,Renderer, popupEnabled = true) {
+		  var labelingInfo = labelClass;
+		  labelingInfo.labelPlacement = (( GeometryType === 'point' ) ? 'above-center' : (( GeometryType === 'polygon' ) ? 'always-horizontal' : 'center-along')); 
+		  var LayerDef = new FeatureLayer({
             title: Title,
             objectIdField: "ObjectID",
 			fields: [
@@ -232,12 +232,12 @@
             spatialReference: { wkid: 4326 },
             source: [], // adding an empty feature collection
 			renderer: Renderer,
-			//popupEnabled: false,
+			popupEnabled: popupEnabled,
             popupTemplate: {
               title: "<div style='display: flex;  width: 100%; margin: 0; padding: 0px;'><div style='height: 10px; text-align: left; padding-right: 3px; flex-shrink: 0;'>	 <img src='https://janschrotenboer.github.io/POCGISZAAK/Icon{ICON}.png' height='20px'> </div> <div style='width: 100%; margin-bottom: -5px; font-size: 15px; color: #1B73E7; font-weight: 600; text-align: left; white-space: normal; padding: 2px 0px 0px 1px;'><a style='color: #1B73E7; text-decoration: none;' href='{URL}' target='_blank' >{TITLE}</a></div> </div>",
 			  content: "<div style='width: 100%; font-size: 12px;'><div style='color: #999;'>{SUBTITLE}</div><div style='margin-top: 2px; padding-top: 2px; border-top: 1px solid black; display: {POP_DISPLAY_DETAILS}'><div style='display: {POP_DISPLAY_TYPE}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>{POP_TYPE_LABEL}</div><div style='padding-left: 5px;'>{TYPE}</div></div><div style='display: {POP_DISPLAY_REQUESTOR}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Aanvrager</div><div style='padding-left: 5px;'>{REQUESTOR}</div></div><div style='display: {POP_DISPLAY_ASSIGNEE}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Behandelaar</div><div style='padding-left: 5px;'>{ASSIGNEE}</div></div><div style='display: {POP_DISPLAY_ORIGIN}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Locatie</div><div style='padding-left: 5px;'>{ORIGIN}</div></div><div style='display: {POP_DISPLAY_LOCATION_DESCRIPTION}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Adres</div><div style='padding-left: 5px;'>{LOCATION_DESCRIPTION}</div></div></div></div>"
             },
-			labelingInfo: [labelClass],
+			labelingInfo: [labelingInfo],
 			listMode : "hide"//,
 			//featureReduction: clusterConfig
             });
@@ -292,7 +292,7 @@
 		// Tekenlaag toevoegen + LabelLayer
 		graphicsLayer = new GraphicsLayer({listMode : "hide"});  
 		map.add(graphicsLayer,0);
-		const LayerLabels = DefineFeatureLayer ('Labels','point',createRenderer(WFEmptySymbol));
+		const LayerLabels = DefineFeatureLayer ('Labels','point',createRenderer(WFEmptySymbol), false);
 		map.add(LayerLabels,0);
 		
 		////////////////FEATURE TEKENCOMONENT TOEVOEGEN EN FULL SCREEN /////////////////////
@@ -386,14 +386,15 @@
 		  
 		  // GeoJSON op Graphicslayer voor tekenen of kenmerkgeometrie tonen  
 		  function GeoJsonToGraphicsLayer() {
-            view.when(function() {
+		    console.log('GeoJsonToGraphicsLayer');
+			view.when(function() {
 		      GeoJsonToGraphics (config.initialFeature); 
 		      graphicsLayer.addMany(GraphicsPunt);
 		      graphicsLayer.addMany(GraphicsLijn);
 		      graphicsLayer.addMany(GraphicsVlak);
 			  CopyGraphicsToLabelLayer();	
 		      // En nu nog even inzoomen op de graphics
-		      view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		      view.zoom = 14; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
 			  //view.goTo(GraphicsZoom);
 		      view.goTo(graphicsLayer.graphics);
 	        });
@@ -466,6 +467,7 @@
 
         function setFeature (GeoJson) {
 		  view.when(function() {
+		    console.log('setFeature');
 		    //Eerst bestaande features verwijderen
 			removeFeaturesFromLayer(LayerZaakLijn);
 			removeFeaturesFromLayer(LayerZaakVlak);
@@ -474,7 +476,7 @@
 		    GeoJsonToGraphics (GeoJson);
 		    addFeaturesToLayers();
 		    // En nu nog even inzoomen op de graphics
-		    view.zoom = 10; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		    view.zoom = 14; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
 		    view.goTo(GraphicsZoom);
 		  })
 		};
@@ -518,7 +520,7 @@
 			  view.graphics.add(element);
 			  //projection nodig om te zoomen naar de juiste locatie
 		      var ZoomGeometry = projection.project(element.geometry, view.spatialReference);
-			  view.goTo({target:ZoomGeometry, zoom: 13}, { duration: 800 });
+			  view.goTo({target:ZoomGeometry, zoom: 14}, { duration: 800 });
 		    });
 		  })
         }
@@ -562,11 +564,11 @@
 		  var GraphicsClone = [];
 		  Graphics.forEach(function(graphicje) {
 		    var GraphicClone = new Graphic({ geometry: projection.project(graphicje.geometry, {"wkid": 4326}), 
-			                                 attributes: graphicje.attributes, 
-											 symbol:graphicje.symbol
+		                                     attributes: graphicje.attributes, 
+		  	    							 symbol:graphicje.symbol
 										  });
-		 	GraphicsClone.push(GraphicClone);  
-		  });
+		    GraphicsClone.push(GraphicClone);
+          }); 			  
 		  if (Level === 'Geometry') {
 		    GeoJsonFeatures = Terraformer.ArcGIS.parse(GraphicsClone[0].geometry)
 		  } else {
@@ -642,7 +644,7 @@
 			    Attributes.REQUESTOR = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.requestor :  null) : null ) ;
 			    Attributes.LOCATION_DESCRIPTION = ( !SelfInd ? ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) : null) ;
                 Attributes.ORIGIN = ((!SelfInd && ["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.custom_field_label : null);
-                Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
+                Attributes.WF_LABEL = ( (["CASE", "OBJECT"].includes(Attributes.FAMILY)) ? ((Properties.zaaksysteem.origin.custom_field_label !== undefined) ? Properties.zaaksysteem.origin.custom_field_label + '<br/>' : null) : Attributes.TITLE + '<br/>') + ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null);
                 Attributes.POP_DISPLAY_ASSIGNEE = ((Attributes.ASSIGNEE === null) ? 'none' : 'flex');
 			    Attributes.POP_DISPLAY_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
                 Attributes.POP_DISPLAY_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
