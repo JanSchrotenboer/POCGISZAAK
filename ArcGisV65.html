@@ -54,7 +54,7 @@
     let name;
 	let host;
 	let MessageVersion = 5;
-	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 6.3';
+	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 6.5';
 
     const createMap = done => {
 
@@ -170,11 +170,11 @@
 		//////////////////////////////////// KNOPPEN ///////////////////////////////////////////
 		
 		//Openen GeoWeb
-		function KnopGeoWeb(){
+		function KnopGeoWeb(Position = "bottom-left"){
 		  geowebBtn = document.createElement('div');
 	      geowebBtn.className = "esri-icon-launch-link-external esri-widget--button";
 		  geowebBtn.title =  "Geoweb Wetterskip Fryslan openen";
-          view.ui.add(geowebBtn, "bottom-left");		
+          view.ui.add(geowebBtn, Position);		
 		  geowebBtn.addEventListener('click', openGeoweb);
 		}
 		
@@ -327,15 +327,18 @@
 		  map.add(LayerZaakLijn);
 		}
 
-		/////////////////////////////// TEKENTOOLS TOEVOEGEN ///////////////////////////////////
-		
-		// Tekentools + benodigde layers + Labelform toevoegen
-		function addDrawing () {
+		/////////////////////////////// TEKENTOOLS EN GRAPHICS LAYER TOEVOEGEN ///////////////////////////////////
+
+        // Tekenlagen toevoegen
+		function addGraphicsLayer () {
 		  graphicsLayer = new GraphicsLayer({listMode : "hide"});  
 		  map.add(graphicsLayer,0);
 		  LayerLabels = DefineFeatureLayer ('Labels','point',createRenderer(WFEmptySymbol), false);
-		  map.add(LayerLabels,0);
-		  
+		  map.add(LayerLabels,0);		
+		}
+		
+		// Tekentools + Labelform toevoegen
+		function addDrawing () {
 		  // Tekentool toevoegen 
 		  sketch = new Sketch({
             layer: graphicsLayer,
@@ -403,18 +406,26 @@
 		  if (name === 'advancedSearchMap') {
 		    addZaakLayers();
 		    KnoppenUitgebreid (true);
+		  
 		  } else if ( ["CaseMap", "ObjectMap", "SubjectMap"].includes(config.context.type) ) {
 		    addZaakLayers();
 		    KnoppenUitgebreid (true);
+		  
 		  } else if ( config.canDrawFeatures ) {
+		    addGraphicsLayer();
 		    addDrawing();
 			KnoppenUitgebreid (false);
-          } else if ( !config.canDrawFeatures ) { 
-			addClickEvent();
+			
+		  } else if ( ["CaseView", "ObjectView", "SubjectView"].includes(config.context.type) ) {
+		    addGraphicsLayer();		  
+          
+		  } else if ( !config.canDrawFeatures ) { 
+			addClickEvent();			
+		  
 		  }
 
 		  // Geoweb openen
-	      KnopGeoWeb();
+		  KnopGeoWeb((config.canDrawFeatures) ? 'bottom-right' : 'bottom-left');
 		  
 		  //Initial value GeoJSON op kaart zetten
 		  if (config.initialFeature) {
@@ -565,7 +576,7 @@
 			  view.graphics.add(element);
 			  //projection nodig om te zoomen naar de juiste locatie
 		      var ZoomGeometry = projection.project(element.geometry, view.spatialReference);
-			  view.goTo({target:ZoomGeometry, zoom: 14}, { duration: 800 });
+			  view.goTo({target:ZoomGeometry, zoom: 12}, { duration: 800 });
 		    });
 		  })
         }
@@ -720,7 +731,6 @@
 		document.getElementById("map-container").style.cursor = "crosshair";
 		
 		//zorgen voor labelform bij editen geometrie
-		view.ui.add(document.getElementById("labelform"), "bottom-left");
 		view.ui.add(document.getElementById("labelform"), "bottom-left");
         const graghiclabel = document.getElementById("GraphicLabel");
         graghiclabel.addEventListener("onchange", featureChange);		
