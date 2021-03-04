@@ -652,7 +652,7 @@
 		// Functie om properties uit zaaksysteem om te zetten naar Esri attributes
 		// Deze functie kan vereenvoudigd worden als de properties vanuit zaaksysteem goed meegestuurd worden
 		function AttibutesFromGeoJsonProperties (Properties) {
-		  //console.log('Properties: '+JSON.stringify(Properties));
+		  console.log('Properties: '+JSON.stringify(Properties));
 		  var Attributes = {};
 		  if (Properties !== undefined) {
 		    try {
@@ -721,7 +721,7 @@
               console.log('Error Attributes: '+err);
             }
 		  }
-		  //console.log('Attributes: '+JSON.stringify(Attributes));
+		  console.log('Attributes: '+JSON.stringify(Attributes));
    	      return Attributes;
 		}
 
