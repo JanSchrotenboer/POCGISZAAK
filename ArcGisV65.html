@@ -45,7 +45,7 @@
     </style>
     <script>
 	
-	let WFPointSymbol = { type: "simple-marker", style: "circle", color: [ 255,255, 255, 0.7 ],  size: "12px",  outline: {  color: "red", width: 2 }};
+	let WFPointSymbol = { type: "simple-marker", style: "circle", color: red,  size: "11px",  outline: {  color: "red", width: 2 }};
 	let WFFillSymbol = { type: "simple-fill",  color: [ 255,255, 255, 0.7 ], style: "solid", outline: {  color: "red",  width: 2 }};
 	let WFLineSymbol = { type: "simple-line",  color: "red", width: 2, style: "solid"};
     let WFEmptySymbol = { type: "simple-marker", size: 0};
@@ -304,7 +304,7 @@
         function createSymbol(GeometryType = 'fill', SymbolColor = [255,0,0,0]) {
 		  var Symbol;
 		  if ( GeometryType === 'marker' ) {
-		    Symbol = { type: "simple-marker", style: "circle", color: SymbolColor,  size: "10px",  outline: {  color: SymbolColor, width: 2 }};
+		    Symbol = { type: "simple-marker", style: "circle", color: SymbolColor,  size: "11px",  outline: {  color: SymbolColor, width: 2 }};
 		  } else if ( GeometryType === 'fill' ) {
 		    Symbol = { type: "simple-fill",  color: [ 255,255, 255, 0.6 ], style: "solid", outline: {  color: SymbolColor,  width: 2 }};
 		  } else {
