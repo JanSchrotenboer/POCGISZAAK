@@ -423,7 +423,11 @@
 		    addGraphicsLayer();
 		    addDrawing();
 			KnoppenUitgebreid (false);
-			
+		  } else if ( ["CaseRegistrationForm"].includes(config.context.type) ) {
+		    addGraphicsLayer();		
+			if ( !config.canDrawFeatures ) { 
+			  addClickEvent();
+			}
 		  } else if ( ["CaseView", "ObjectView", "SubjectView"].includes(config.context.type) ) {
 		    addGraphicsLayer();		  
           
