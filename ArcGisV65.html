@@ -58,24 +58,9 @@
     let name;
 	let host;
 	let MessageVersion = 5;
-	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 6.6';
-	
-	//////////////////////////////////// WEBMAP / BASEMAP ///////////////////////////////////////////
-	
-	const loadZsConfig = done => {
-	  window.addEventListener('message', event => {
-        if (event.data.type === 'init') {
-          config = event.data.value;
-          name = event.data.name;
-		  host = event.origin;
-		  console.log('Init: '+JSON.stringify(event.data));
-          done();
-        }
-      })
-    }
+	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 6.5';
 
-    //////////////////////////////////// KAARTAPP LADEN ///////////////////////////////////////////
-    const createMap = () => {
+    const createMap = done => {
 
       require([
       "esri/widgets/Sketch", 
@@ -414,7 +399,7 @@
 		
 		/////////////////////////////// INITALISEREN KAART ////////////////////////////////////////
 
-        /*window.addEventListener('message', event => {
+        window.addEventListener('message', event => {
           if (event.data.type === 'init') {
             config = event.data.value;
             name = event.data.name;
@@ -424,7 +409,7 @@
           }
         });
 
-        function initMap(){*/
+        function initMap(){
 		
 		  if (name === 'advancedSearchMap') {
 		    addZaakLayers();
@@ -465,7 +450,7 @@
 			}
 		  };
 
-		//};  
+		};  
 		  
         /////////////////////////////////// GRAPHICSLAYER VULLEN ///////////////////////////		
 		  
@@ -774,9 +759,8 @@
 	  done();
 	};
 	  
-	new Promise(loadZsConfig).then(() => {
+	new Promise(createMap).then(() => {
 	  console.log(IntegrationVersion);
-	  createMap()';
     });	  
 
     </script>
