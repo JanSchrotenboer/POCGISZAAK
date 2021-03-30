@@ -135,27 +135,30 @@
 		var expandAdresZoeken;
 		var geowebBtn;
 		var ActionButtons = { Adres : false, Kaartlagen : false, Geoweb : false }; 
+		var map;
 	  
 		//////////////////////////////////// WEBMAP / BASEMAP ///////////////////////////////////////////
 
-        //const map = new Map({ basemap: "topo-vector"});
-		
-		const map = new WebMap({
-          portalItem: {
-            id: "28cad4ab8fb84b2092aaca49ca21d3c2", 
+        
+		if (config.wmsLayers.length === 0) {
+		  map = new Map({ basemap: "topo-vector"});
+		} else {
+		  map = new WebMap({
+              portalItem: {
+                id: config.wmsLayers[0].layers, 
 			
 			//28cad4ab8fb84b2092aaca49ca21d3c2 - productie legger zonder inlog
 			//6a461d9ee96e4bb391b089ded585ac9b - test informatieborden
 			//e81a21ea2dc94704881f2fc511e221dd - productie rayongebieden
 			//d2e124c73991483a96e8ef54144ef317 - test ZaaksysteemNL
 			//e81a21ea2dc94704881f2fc511e221dd - productie rayongebieden zonder inlog
-            portal: {
-              url: "https://gis.wetterskipfryslan.nl/portal",
-			  authMode: "auto",
-			  canSignInIDP: true,
-			  canSignInArcGIS: false   
-	        }
-          }
+              portal: {
+                url: config.wmsLayers[0].url,
+			    authMode: "auto",
+			    canSignInIDP: true,
+			    canSignInArcGIS: false   
+	          }
+            } 
 		});
 		
 		//////////////////////////////////// TONEN KAART ////////////////////////////////////////////////
@@ -771,7 +774,7 @@
 	 
   	  });
 	  
-	  done();
+	  //done();
 	};
 	  
 	new Promise(loadZsConfig).then(() => {
