@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.20/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.20/"></script>
+	<script src="https://unpkg.com/terraformer@1.0.9"></script>
+    <script src="https://unpkg.com/terraformer-arcgis-parser@1.0.5"></script>
+
+    <style>
+      html, body, #map-container { padding: 0; margin: 0; height: 100%; width: 100%; }
+	  .esri-sketch__section { padding: 0; margin: 0; }
+	  .esri-sketch__feature-count-badge { margin-left: 4px; margin-top: 2px;}  
+	  .esri-sketch__tool-section { border-right: none; }
+      .esri-sketch__section { padding: none; margin: none; }
+	  .esri-sketch__button.esri-icon-undo, .esri-sketch__button.esri-icon-redo { display:none; }
+	  #labelform { padding: 4px;}
+	  .esri-layer-list__item--has-children>.esri-layer-list__list { padding: 0 0 0 15px; }
+	  .esri-layer-list__item--has-children>.esri-layer-list__item-container { padding-left: 4px; }
+	  .esri-layer-list__item-container { border-left: 0px; padding: 4px 4px 0 4px; }
+	  .esri-layer-list__list { margin: 0px; }
+	  .esri-layer-list { padding: 4px;}  
+      .esri-layer-list__item { margin: 0px; border-bottom: 0px; }
+	  .esri-feature__content-element { padding: 0px; }
+	  
+	  .esri-view-width-less-than-medium .esri-popup__main-container { width: auto; max-width: 100%; min-width: 70%;} [class*="esri-popup--is-docked-bottom-"] .esri-popup__content ~ .esri-popup__footer, [class*="esri-popup--aligned-top-"] .esri-popup__content ~ .esri-popup__footer { margin: 0px -9px 0px 0px;}
+	  .esri-popup__header-buttons { padding: 0px; }
+	  .esri-popup--is-docked .esri-popup__header { padding-top: 0px; }
+	  .esri-popup__content { margin: 0 6px 6px; }
+      .esri-popup__button { margin: 0px; }	  
+      .esri-popup__footer { margin-top: 0px -9px 0px 0px; padding: 0px 0px 6px 0px; }
+      .esri-popup__header-title { padding: 0px; text-align: left; white-space: normal;}
+	  .esri-widget__table tr th {width: 25%; border-right: 0px; }
+	  .esri-widget {line-height: 1em;}
+	  
+	  .wf-pu-status-badge {float: right; font-size: 9px; padding: 1px 4px; border-radius: 6px; margin-left: 1px; font-weight: 400; color: #fff; height: 14px; margin-top: -1px;}
+    
+    </style>
+    <script>
+	
+	let WFPointSymbol = { type: "simple-marker", style: "circle", color: "red",  size: "11px",  outline: {  color: "red", width: 2 }};
+	let WFFillSymbol = { type: "simple-fill",  color: [ 255,255, 255, 0.7 ], style: "solid", outline: {  color: "red",  width: 2 }};
+	let WFLineSymbol = { type: "simple-line",  color: "red", width: 2, style: "solid"};
+    let WFEmptySymbol = { type: "simple-marker", size: 0};
+	let WFBaseColorCase = [0, 168, 230, 1];
+	let WFBaseColorObject = [123, 193, 57, 1];
+	let WFBaseColorSubject = [193, 0, 193, 1];
+	let labelClass = { symbol: { type: "text", color: "black", haloColor: "white", haloSize: "2px", font: { size: 10}}, minScale: 200000, labelExpressionInfo: { expression: "$feature.WF_LABEL" },horizontalAlignment: "left"};
+	let map;
+    let config;
+    let name;
+	let host;
+	let MessageVersion = 5;
+	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 6.6';
+	
+	//////////////////////////////////// WEBMAP / BASEMAP ///////////////////////////////////////////
+	
+	const loadZsConfig = done => {
+	  window.addEventListener('message', event => {
+        if (event.data.type === 'init') {
+          config = event.data.value;
+          name = event.data.name;
+		  host = event.origin;
+		  console.log('Init: '+JSON.stringify(event.data));
+          done();
+        }
+      })
+    }
+
+    //////////////////////////////////// KAARTAPP LADEN ///////////////////////////////////////////
+    const createMap = () => {
+
+      require([
+      "esri/widgets/Sketch", 
+	  "esri/widgets/Sketch/SketchViewModel",
+      "esri/Map",
+	  "esri/WebMap",
+      "esri/layers/GraphicsLayer",
+	  "esri/layers/FeatureLayer",
+      "esri/views/MapView",
+	  "esri/views/draw/Draw",
+	  "esri/Graphic",
+	  "esri/geometry/SpatialReference",
+	  "esri/geometry/projection",
+	  "esri/widgets/Fullscreen",
+	  "esri/widgets/LayerList",
+	  "esri/widgets/Expand",
+	  "esri/widgets/Search",
+	  "esri/core/watchUtils",
+	  "esri/identity/OAuthInfo",
+      "esri/identity/IdentityManager"//,
+	  //"esri/config"
+      ], 
+	  function( 
+	  Sketch, 
+	  SketchViewModel, 
+	  Map, 
+	  WebMap,
+	  GraphicsLayer,
+	  FeatureLayer,
+	  MapView, 
+	  Draw,
+	  Graphic,
+	  SpatialReference,
+	  projection,
+	  Fullscreen,
+	  LayerList,
+	  Expand,
+	  Search,
+	  watchUtils,
+	  OAuthInfo, 
+	  esriId//,
+	  //esriConfig
+	  ) {
+	    var sketchViewModel;
+        var sketch;
+		var fullscreen;
+        var graphicsLayer;	
+		var LayerLabels;
+        var GraphicsPunt = [];
+		var GraphicsLijn = [];
+		var GraphicsVlak = [];
+		var GraphicsZoom = [];	
+		var LayerZaakLijn;
+		var LayerZaakVlak;
+		var LayerZaakPunt;
+		var RendererValuesPunt = [];
+		var RendererValuesVlak = [];
+		var RendererValuesLijn = [];
+        var GeoJsonFeatures = [];	
+        var expandKaartlagen;
+		var expandAdresZoeken;
+		var geowebBtn;
+		var ActionButtons = { Adres : false, Kaartlagen : false, Geoweb : false }; 
+		var map;
+
+		//////////////////////////////////// AUTHENTICATIE ///////////////////////////////////////////
+		
+        const info = new OAuthInfo({
+          // Swap this ID out with registered application ID
+          appId: "PGuBSPHxiTlEJ0c0",
+          // Uncomment the next line and update if using your own portal
+          portalUrl: "https://gistest.wetterskipfryslan.nl/portal",
+          // Uncomment the next line to prevent the user's signed in state from being shared with other apps on the same domain with the same authNamespace value.
+          // authNamespace: "portal_oauth_inline",
+          popup: false
+        });
+        esriId.registerOAuthInfos([info]);
+
+        esriId
+          .checkSignInStatus(info.portalUrl + "/sharing")
+          .then(() => {
+            displayItems();
+          })
+          .catch(() => {
+            // Anonymous view
+			console.log('Ingelogd');
+            //anonPanelElement.style.display = "block";
+            //personalPanelElement.style.display = "none";
+          });		
+
+
+	  
+		//////////////////////////////////// WEBMAP / BASEMAP ///////////////////////////////////////////
+
+        
+		//if (config.wmsLayers.length === 0) {
+		//  map = new Map({ basemap: "topo-vector"});
+		//} else {
+		  map = new WebMap({
+              portalItem: {
+                id: "cdb2edb3a5c748d585f3f58efefe3150",
+			
+			//28cad4ab8fb84b2092aaca49ca21d3c2 - productie legger zonder inlog
+			//6a461d9ee96e4bb391b089ded585ac9b - test informatieborden
+			//e81a21ea2dc94704881f2fc511e221dd - productie rayongebieden
+			//d2e124c73991483a96e8ef54144ef317 - test ZaaksysteemNL
+			//e81a21ea2dc94704881f2fc511e221dd - productie rayongebieden zonder inlog
+              portal: {
+                url: "https://gistest.wetterskipfryslan.nl/portal",
+			    authMode: "auto",
+			    canSignInIDP: true,
+			    canSignInArcGIS: false   
+	          }
+            } 
+		  })
+		//}
+		
+		//////////////////////////////////// TONEN KAART ////////////////////////////////////////////////
+
+        const view = new MapView({
+          container: "map-container",
+          map: map,
+		  center: [5.9, 53.1],
+          zoom: 4,
+		  constraints: { maxZoom: 14 }, // anders problemen met tegels
+		  popup: {
+            dockEnabled: true,
+			collapseEnabled: false,
+			dockOptions: {
+              // Disables the dock button from the popup
+              buttonEnabled: false,
+              // Ignore the default sizes that trigger responsive docking
+              breakpoint: false,
+			  //
+			  position: 'bottom-left'
+            }
+          }
+        });
+		
+		// Zoom knoppen naar onderen
+		view.ui.move("zoom", { position: "top-left", index: 3} );
+		
+		//Laden projectie voor transformaties van en naar geojson - misschien niet nodig, daarom eerst uitgeschakeld voor versnelling
+		projection.load();
+		
+		//////////////////////////////////// KNOPPEN ///////////////////////////////////////////
+		
+		//Openen GeoWeb
+		function KnopGeoWeb(Position = "bottom-left"){
+		  geowebBtn = document.createElement('div');
+	      geowebBtn.className = "esri-icon-launch-link-external esri-widget--button";
+		  geowebBtn.title =  "Geoweb Wetterskip Fryslan openen";
+          view.ui.add(geowebBtn, Position);		
+		  geowebBtn.addEventListener('click', openGeoweb);
+		}
+		
+		function openGeoweb(){
+          projection.load().then(function(evt) {
+            var centerGeoweb = projection.project(view.center, {"latestWkid":28992,"wkid": 28992});
+            var geowebUrl = 'https://gis.wetterskipfryslan.nl/WebViewer/index.html?viewer=Vergunningverlening_en_Handhaving.Vergunningverlening_en_Handhaving&scale='+((view.scale > 280000) ? '280000' : view.scale )+'&center='+centerGeoweb.x+','+centerGeoweb.y;
+ 		    window.open(geowebUrl, "_blank");
+		  });
+        }
+
+        // Knoppen tonen voor Full Screen, Layerlist en Adres Zoeken
+        function KnoppenUitgebreid ( ShowAlways = true )
+		{
+		
+		  // Full Screen
+		  fullscreen = new Fullscreen({
+            view: view
+          });
+          view.ui.add(fullscreen, { position: "top-left", index: 4} );
+		  
+		  //Layerlist widget
+	      const layerList = new LayerList({
+            view: view
+          });
+          expandKaartlagen = new Expand({
+            view: view,
+            content: layerList,
+            expanded: false
+          });
+
+		  //Adres zoeken widget
+		  const search = new Search({
+            view: view
+          });
+          expandAdresZoeken = new Expand({
+            view: view,
+            content: search,
+            expanded: false
+          });
+		  
+		  if (ShowAlways) {
+		    view.ui.add(expandKaartlagen, { position: "top-left", index: 0} );
+		    view.ui.add(expandAdresZoeken, { position: "top-left", index: 1} );
+		  } else {
+			watchUtils.watch(fullscreen.viewModel, "state", (value)=>{
+              if(value === "active"){
+                view.ui.add(expandKaartlagen, { position: "top-left", index: 0} );
+		        view.ui.add(expandAdresZoeken, { position: "top-left", index: 1} );
+              } else if (value === "ready") {
+                view.ui.remove(expandKaartlagen);
+		        view.ui.remove(expandAdresZoeken);
+			  }
+            })		  
+		  }
+        }  
+		
+		////////////////////////////// LAYERS TOEVOEGEN /////////////////////////////////////////
+
+		function DefineFeatureLayer (Title,GeometryType,Renderer, popupEnabled = true) {
+		  var labelingInfo = labelClass;
+		  labelingInfo.labelPlacement = (( GeometryType === 'point' ) ? 'above-center' : (( GeometryType === 'polygon' ) ? 'always-horizontal' : 'center-along')); 
+		  var LayerDef = new FeatureLayer({
+            title: Title,
+            objectIdField: "ObjectID",
+			fields: [
+              { name: "WF_LABEL", type: "string" },
+			  { name: "TITLE", type: "string" },
+			  { name: "SUBTITLE", type: "string" },
+			  { name: "URL", type: "string" },
+			  { name: "TYPE", type: "string" },
+			  { name: "ASSIGNEE", type: "string" },
+			  { name: "REQUESTOR", type: "string" },
+			  { name: "ORIGIN", type: "string" },
+			  { name: "LOCATION_DESCRIPTION", type: "string" },
+			  { name: "STATUS", type: "string" },
+			  { name: "ICON", type: "string" },
+			  { name: "BADGE", type: "string" },
+			  { name: "POP_DISPLAY_ASSIGNEE", type: "string" },
+			  { name: "POP_DISPLAY_REQUESTOR", type: "string" },
+			  { name: "POP_DISPLAY_LOCATION_DESCRIPTION", type: "string" },
+			  { name: "POP_DISPLAY_TYPE", type: "string" },
+			  { name: "POP_DISPLAY_DETAILS", type: "string" },
+			  { name: "POP_DISPLAY_ORIGIN", type: "string" },
+			  { name: "POP_DISPLAY_BADGE", type: "string" },
+			  { name: "TYPE_LABEL", type: "string" },
+			  { name: "BADGE_COLOR", type: "string" },
+			  { name: "REND_VALUE", type: "string" },
+			  { name: "REND_STATUS", type: "string" },
+			  { name: "SELF_IND", type: "string" }
+            ],
+            geometryType: GeometryType,
+            spatialReference: { wkid: 4326 },
+            source: [], // adding an empty feature collection
+			renderer: Renderer,
+			popupEnabled: popupEnabled,
+            popupTemplate: {
+              title: "<div style='display: flex;  width: 100%; margin: 0; padding: 0px;'><div style='height: 10px; text-align: left; padding-right: 3px; flex-shrink: 0; margin-top: -2px;'>	 <img src='https://janschrotenboer.github.io/POCGISZAAK/Icon{ICON}.png' height='20px'> </div> <div style='width: 100%; margin-bottom: -5px; font-size: 15px; color: #1B73E7; font-weight: 600; text-align: left; white-space: normal; padding: 2px 0px 0px 1px;'><a style='color: #1B73E7; text-decoration: none;' href='{URL}' target='_blank' >{TITLE}</a><span class='wf-pu-status-badge' style='display: {POP_DISPLAY_BADGE}; background: {BADGE_COLOR}'>{BADGE}</span></div></div>",
+			  content: "<div style='width: 100%; font-size: 12px;'><div style='color: #999;'>{SUBTITLE}</div><div style='margin-top: 2px; padding-top: 2px; border-top: 1px solid black; display: {POP_DISPLAY_DETAILS}'><div style='display: {POP_DISPLAY_TYPE}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>{TYPE_LABEL}</div><div style='padding-left: 5px;'>{TYPE}</div></div><div style='display: {POP_DISPLAY_REQUESTOR}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Aanvrager</div><div style='padding-left: 5px;'>{REQUESTOR}</div></div><div style='display: {POP_DISPLAY_ASSIGNEE}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Behandelaar</div><div style='padding-left: 5px;'>{ASSIGNEE}</div></div><div style='display: {POP_DISPLAY_ORIGIN}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Locatie</div><div style='padding-left: 5px;'>{ORIGIN}</div></div><div style='display: {POP_DISPLAY_LOCATION_DESCRIPTION}; flex-direction: row; min-width: 0;'><div style='font-weight: 600;'>Adres</div><div style='padding-left: 5px;'>{LOCATION_DESCRIPTION}</div></div></div></div>"
+            },
+			labelingInfo: [labelingInfo],
+			listMode : "hide"//,
+			//featureReduction: clusterConfig
+            });
+		  return LayerDef;
+		}
+
+		DefineRendererValues ();
+		// Unique renderer values vullen, eventueel aangevuld vanuit Init
+		function DefineRendererValues (){
+		  RendererValuesPunt.push( { value: "case", symbol: createSymbol('marker', WFBaseColorCase), label: "Zaak" } );
+		  RendererValuesPunt.push( { value: "object", symbol: createSymbol('marker', WFBaseColorObject), label: "Object" } );
+		  RendererValuesPunt.push( { value: "subject", symbol: createSymbol('marker', WFBaseColorSubject), label: "Subject" } );
+		  RendererValuesLijn.push( { value: "case", symbol: createSymbol('line', WFBaseColorCase), label: "Zaak" } );
+		  RendererValuesLijn.push( { value: "object", symbol: createSymbol('line', WFBaseColorObject), label: "Object" } );
+		  RendererValuesLijn.push( { value: "subject", symbol: createSymbol('line', WFBaseColorSubject), label: "Subject" } );
+		  RendererValuesVlak.push( { value: "case", symbol: createSymbol('fill', WFBaseColorCase), label: "Zaak" } );
+		  RendererValuesVlak.push( { value: "object", symbol: createSymbol('fill', WFBaseColorObject), label: "Object" } );
+		  RendererValuesVlak.push( { value: "subject", symbol: createSymbol('fill', WFBaseColorSubject), label: "Subject" } );
+        }
+
+        // Symbol creeren voor renderer
+        function createSymbol(GeometryType = 'fill', SymbolColor = [255,0,0,0]) {
+		  var Symbol;
+		  if ( GeometryType === 'marker' ) {
+		    Symbol = { type: "simple-marker", style: "circle", color: SymbolColor,  size: "11px",  outline: {  color: SymbolColor, width: 2 }};
+		  } else if ( GeometryType === 'fill' ) {
+		    Symbol = { type: "simple-fill",  color: [ 255,255, 255, 0.6 ], style: "solid", outline: {  color: SymbolColor,  width: 2 }};
+		  } else {
+		    Symbol = { type: "simple-line",  color: SymbolColor, width: 2, style: "solid"};
+		  }
+          return Symbol;
+        }
+
+        // Symbol creeren voor renderer
+        function createRenderer(DefaultSymbol, RendererValues = []) {
+          return {
+            type: "unique-value", 
+            defaultSymbol: DefaultSymbol,
+            field: "REND_VALUE",
+            uniqueValueInfos: RendererValues
+          };
+        }
+
+		/////////////////////////////// ZAAKLAGEN TOEVOEGEN ///////////////////////////////////
+
+        // Zaaklagen toevoegen 
+        function addZaakLayers () {
+		  LayerZaakVlak = DefineFeatureLayer ('Zaaksysteem','polygon',createRenderer(WFFillSymbol, RendererValuesVlak));
+		  map.add(LayerZaakVlak);
+		  LayerZaakPunt = DefineFeatureLayer ('Zaaksysteem','point',createRenderer(WFPointSymbol, RendererValuesPunt));
+		  map.add(LayerZaakPunt);
+		  LayerZaakLijn = DefineFeatureLayer ('Zaaksysteem','polyline',createRenderer(WFLineSymbol, RendererValuesLijn));
+		  map.add(LayerZaakLijn);
+		}
+
+		/////////////////////////////// TEKENTOOLS EN GRAPHICS LAYER TOEVOEGEN ///////////////////////////////////
+
+        // Tekenlagen toevoegen
+		function addGraphicsLayer () {
+		  graphicsLayer = new GraphicsLayer({listMode : "hide"});  
+		  map.add(graphicsLayer,0);
+		  LayerLabels = DefineFeatureLayer ('Labels','point',createRenderer(WFEmptySymbol), false);
+		  map.add(LayerLabels,0);		
+		}
+		
+		// Tekentools + Labelform toevoegen
+		function addDrawing () {
+		  // Tekentool toevoegen 
+		  sketch = new Sketch({
+            layer: graphicsLayer,
+            view: view,
+            // graphic will be selected as soon as it is created
+            creationMode: "update"//,
+			//layout: "vertical"
+          });
+          view.ui.add(sketch, "top-right", 1);
+		  
+          // Create a new instance of sketchViewModel
+          view.when(function() {
+            sketchViewModel = new SketchViewModel({
+              view: view,
+              layer: graphicsLayer,
+              updateOnGraphicClick: false,
+              defaultUpdateOptions: {
+                // set the default options for the update operations
+                toggleToolOnClick: false // only reshape operation will be enabled
+			  }
+            });
+		  });		  
+		  
+		  //Als er wordt getekend moet de waarde daarvan direct retour gestuurd worden naar de parent en eventueel moet labelform getoond worden
+		  sketch.on(["create","remove","reshape","update"], function(event) {
+			// labelform tonen of verbergen
+			if (event.state === 'start' && event.type === 'update') {
+			  if (event.graphics[0].attributes) {
+				document.getElementById("GraphicLabel").value = event.graphics[0].attributes.WF_LABEL;
+			  } else { 
+			    document.getElementById("GraphicLabel").value = '';
+			  }
+			  document.getElementById("labelform").classList.remove("esri-hidden");
+			} else if (event.state === 'complete' && event.type === 'update') {
+			  document.getElementById("labelform").classList.add("esri-hidden");
+			  event.graphics[0].attributes = { "WF_LABEL": document.getElementById("GraphicLabel").value };
+              CopyGraphicsToLabelLayer();				
+            }
+			// En featureChange sturen
+			featureChange();
+          });
+		  
+		  // zorgen dat objecten altijd gelijk getoond worden
+		  graphicsLayer.graphics.on(["before-add"], function(event) {
+			if (event.item.geometry.rings !== undefined) { event.item.symbol = WFFillSymbol; }
+			else if ( event.item.geometry.paths !== undefined) { event.item.symbol = WFLineSymbol; }
+            else { event.item.symbol = WFPointSymbol; }
+          });		  
+		}
+		
+		/////////////////////////////// INITALISEREN KAART ////////////////////////////////////////
+
+        /*window.addEventListener('message', event => {
+          if (event.data.type === 'init') {
+            config = event.data.value;
+            name = event.data.name;
+			host = event.origin;
+		    console.log('Init: '+JSON.stringify(event.data));
+            initMap();
+          }
+        });
+
+        function initMap(){*/
+		
+		  if (name === 'advancedSearchMap') {
+		    addZaakLayers();
+		    KnoppenUitgebreid (true);
+		  
+		  } else if ( ["CaseMap", "ObjectMap", "SubjectMap"].includes(config.context.type) ) {
+		    addZaakLayers();
+		    KnoppenUitgebreid (true);
+		  
+		  } else if ( config.canDrawFeatures ) {
+		    addGraphicsLayer();
+		    addDrawing();
+			KnoppenUitgebreid (false);
+		  } else if ( ["CaseRegistrationForm"].includes(config.context.type) ) {
+		    addGraphicsLayer();		
+			if ( !config.canDrawFeatures ) { 
+			  addClickEvent();
+			}
+		  } else if ( ["CaseView", "ObjectView", "SubjectView"].includes(config.context.type) ) {
+		    addGraphicsLayer();		  
+          
+		  } else if ( !config.canDrawFeatures ) { 
+			addClickEvent();			
+		  
+		  }
+
+		  // Geoweb openen
+		  KnopGeoWeb((config.canDrawFeatures) ? 'bottom-right' : 'bottom-left');
+		  
+		  //Initial value GeoJSON op kaart zetten
+		  if (config.initialFeature) {
+		    if (config.initialFeature.features.length > 0) {
+  		      if (name === 'advancedSearchMap' || ["CaseMap", "ObjectMap"].includes(((config.context.type !==  undefined) ? config.context.type : null))) {
+			    setFeature (config.initialFeature)
+			  } else {
+			    GeoJsonToGraphicsLayer();
+			  }
+			}
+		  };
+
+		//};  
+		  
+        /////////////////////////////////// GRAPHICSLAYER VULLEN ///////////////////////////		
+		  
+		// GeoJSON op Graphicslayer voor tekenen of kenmerkgeometrie tonen  
+		function GeoJsonToGraphicsLayer() {
+		  //console.log('GeoJsonToGraphicsLayer');
+		  view.when(function() {
+		    GeoJsonToGraphics (config.initialFeature); 
+		    graphicsLayer.addMany(GraphicsPunt);
+		    graphicsLayer.addMany(GraphicsLijn);
+		    graphicsLayer.addMany(GraphicsVlak);
+			CopyGraphicsToLabelLayer();	
+		    // En nu nog even inzoomen op de graphics
+		    view.zoom = 14; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+			//view.goTo(GraphicsZoom);
+		    view.goTo(graphicsLayer.graphics);
+	      });
+        };		  
+
+		/////////////////////////////////// CLICK /////////////////////////////////////////
+		
+		function addClickEvent() {
+		  view.on(["pointer-down"], function(evt) {
+		    GraphicsToGeoJson ([{ geometry: view.toMap({ x: evt.x, y: evt.y })}], 'Geometry');
+		    console.log('Send Click - value: '+JSON.stringify(GeoJsonFeatures));
+		    window.top.postMessage({
+              type: 'click',
+              name: name,
+			  version: MessageVersion,
+              value: JSON.parse(JSON.stringify(GeoJsonFeatures))
+              },
+              '*'
+            );
+			// Zet 'm ook gelijk op de kaart, eerst weggehaald
+			//GeoJsonToGraphics(GeoJsonFeatures);
+            //setMarker(GraphicsPunt);
+          });
+        }
+
+		/////////////////////////////////FEATURE CHANGE ////////////////////////////////////
+		
+		function featureChange () {
+		  GraphicsToGeoJson (graphicsLayer.graphics);
+		  console.log('Send featureChange - value: '+JSON.stringify(GeoJsonFeatures));
+          window.top.postMessage({
+            type: 'featureChange',
+            name: name,
+			version: MessageVersion,
+            value: JSON.parse(JSON.stringify(GeoJsonFeatures))
+            },
+            '*'
+          );
+        }
+		
+		function refreshFeaturesOnLayer(layer,graphics) {
+		  layer.queryFeatures().then(function (results) {
+            const deleteEdits = { deleteFeatures: results.features};
+            layer.applyEdits(deleteEdits);
+			const addEdits = { addFeatures: graphics };
+		    layer.applyEdits(addEdits);
+          });  
+        }
+		
+		function CopyGraphicsToLabelLayer() {
+		  GraphicsPunt = [];
+		  graphicsLayer.graphics.forEach(function(graphic) {
+		    //console.log('Properties bij kopie: '+JSON.stringify(graphic.attributes)); //kan weer weg
+		    var graphicje = [];
+		    if (graphic.geometry.rings !== undefined) { 
+			  const centroid = new Graphic({geometry: graphic.geometry.centroid, attributes: graphic.attributes});
+			  GraphicsPunt.push(centroid);
+			} else if (graphic.geometry.paths !== undefined) { 
+			  const polygon = new Graphic({geometry: { type: "polygon", rings: graphic.geometry.paths, spatialReference: graphic.geometry.spatialReference }});
+			  const centroid = new Graphic({geometry: polygon.geometry.centroid, attributes: graphic.attributes});
+			  GraphicsPunt.push(centroid);
+            } else {GraphicsPunt.push(graphic);};	
+          })		
+		  refreshFeaturesOnLayer(LayerLabels,GraphicsPunt);
+		}
+		
+		/////////////////////////////////SET FEATURE ///////////////////////////////////////
+
+        function setFeature (GeoJson) {
+		  view.when(function() {
+		    console.log('setFeature');
+		    //Eerst bestaande features verwijderen
+			removeFeaturesFromLayer(LayerZaakLijn);
+			removeFeaturesFromLayer(LayerZaakVlak);
+			removeFeaturesFromLayer(LayerZaakPunt);
+			//En de nieuwe erop
+		    GeoJsonToGraphics (GeoJson);
+		    addFeaturesToLayers();
+		    // En nu nog even inzoomen op de graphics
+		    view.zoom = 14; //is nodig als er maar 1 punt is, bij meerdere geometrien niet nodig
+		    view.goTo(GraphicsZoom);
+		  })
+		};
+		
+ 		function addFeaturesToLayers() {
+		  LayerZaakLijn.applyEdits({ addFeatures: GraphicsLijn });
+		  LayerZaakVlak.applyEdits({ addFeatures: GraphicsVlak });
+		  LayerZaakPunt.applyEdits({ addFeatures: GraphicsPunt });
+        }
+		
+		function removeFeaturesFromLayer ( Layer ) {
+          Layer.queryFeatures().then(function(results){
+		    Layer.applyEdits({deleteFeatures: results.features });
+          });
+        }
+		
+        // Listener for setFeature
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'setFeature') {
+            console.log('setFeature: '+JSON.stringify(event.data));
+			setFeature(event.data.value)
+          }
+        });
+		
+		/////////////////////////////////// SET MARKER ////////////////////////////////////
+
+        window.addEventListener('message', (event) => {
+          if (event.data.type === 'setMarker' && event.data.value) {
+			console.log('setMarker: '+JSON.stringify(event.data));
+			GeoJsonToGraphics (event.data.value, 'Geometry');
+            setMarker(GraphicsPunt);
+          } else if (event.data.type === 'setMarker') {
+		      view.graphics.removeAll();
+		  }
+        });
+		
+		function setMarker(GraphicsMarker){
+		  view.when(function() {
+            view.graphics.removeAll();
+		    GraphicsMarker.forEach(function(element) { 
+			  view.graphics.add(element);
+			  //projection nodig om te zoomen naar de juiste locatie
+		      var ZoomGeometry = projection.project(element.geometry, view.spatialReference);
+			  view.goTo({target:ZoomGeometry, zoom: 13}, { duration: 800 });
+		    });
+		  })
+        }
+       
+		///////////////////////////// FUNCTIES VOOR TRANSFORMATIE /////////////////////////
+
+        function GeoJsonToGraphics (GeoJson) {
+		  GraphicsPunt = [];
+		  GraphicsLijn = [];
+		  GraphicsVlak = [];
+		  GraphicsZoom = [];
+		  if (GeoJson !== undefined ) {
+            // Check of het een collection betreft  
+		    if (GeoJson.features !== undefined) {
+			  for (x in GeoJson.features) {
+                GeoJsonGeometryToGraphic(GeoJson.features[x].geometry, GeoJson.features[x].properties);
+              }
+			} else if ( GeoJson.type === 'Feature') {
+			    GeoJsonGeometryToGraphic ( GeoJson.geometry, GeoJson.properties );
+			} else {
+                GeoJsonGeometryToGraphic ( GeoJson, null );
+            }			  
+		    function GeoJsonGeometryToGraphic (FeatureGeometry,FeatureProperties) {
+              var geometrietje = Terraformer.ArcGIS.convert(FeatureGeometry);
+			  var featuretje = { geometry: geometrietje };
+			  var graphicje = Graphic.fromJSON(featuretje);
+			  GraphicsZoom.push (graphicje);
+			  graphicje.attributes = ((FeatureProperties !== null) ? AttibutesFromGeoJsonProperties (FeatureProperties) : null);
+			  projection.load().then(function(evt) {
+			    graphicje.geometry = projection.project(graphicje.geometry,view.spatialReference);
+              });
+			  if (FeatureGeometry.type == "Point") { graphicje.symbol = WFPointSymbol;  GraphicsPunt.push(graphicje);}
+              else if (FeatureGeometry.type == "LineString") { graphicje.symbol = WFLineSymbol; GraphicsLijn.push(graphicje);}
+			  else { graphicje.symbol = WFFillSymbol; GraphicsVlak.push(graphicje);};
+	        }
+          }	
+        } 
+		
+		function GraphicsToGeoJson (Graphics, Level = 'Collection') {
+          // clonen graphics zodat ze losgekoppeld worden van de kaart
+		  var GraphicsClone = [];
+		  Graphics.forEach(function(graphicje) {
+		    var GraphicClone = new Graphic({ geometry: projection.project(graphicje.geometry, {"wkid": 4326}), 
+		                                     attributes: graphicje.attributes, 
+		  	    							 symbol:graphicje.symbol
+										  });
+		    GraphicsClone.push(GraphicClone);
+          }); 			  
+		  if (Level === 'Geometry') {
+		    GeoJsonFeatures = Terraformer.ArcGIS.parse(GraphicsClone[0].geometry)
+		  } else {
+		    GeoJsonFeatures = GraphicsClone.map (
+              ({ attributes, geometry }, index) => {
+                return {
+                  id: index,
+                  properties: attributes,
+		          type: "Feature",
+                  geometry: Terraformer.ArcGIS.parse(geometry)
+                };
+              }
+            );
+		    if ( Level === 'Collection') {
+		      GeoJsonFeatures = {
+                type: "FeatureCollection",
+                features: GeoJsonFeatures
+                };
+		    }
+		  }
+		} 
+		
+		///////////////////GEOJSON PROPERTIES TO ESRI ATTRIBUTES /////////////////////////////////
+		
+		// Functie om properties uit zaaksysteem om te zetten naar Esri attributes
+		// Deze functie kan vereenvoudigd worden als de properties vanuit zaaksysteem goed meegestuurd worden
+		function AttibutesFromGeoJsonProperties (Properties) {
+		  console.log('Properties: '+JSON.stringify(Properties));
+		  var Attributes = {};
+		  if (Properties !== undefined) {
+		    try {
+		      if (name === 'advancedSearchMap') {
+			    //tijdelijke lelijke oplossing voor ontbrekende self en origin bij uitgebreid zoeken, 2 if-then-else-jes hierna moeten dus straks weer weg
+			    if (!Properties.zaaksysteem.self) { Properties.zaaksysteem.self = Properties.zaaksysteem.origin;}
+				if (Properties.zaaksysteem.origin === null) { Properties.zaaksysteem.origin = Properties.zaaksysteem.self;}
+			    //Indicatie voor als het een kenmerk van het betreffende object/zaak betreft
+				var SelfInd = ((Properties.zaaksysteem.self.id !==  undefined && Properties.zaaksysteem.origin.id !==  undefined) ? (Properties.zaaksysteem.self.id === Properties.zaaksysteem.origin.id) : true);
+		        Attributes.ID = ((Properties.zaaksysteem.self.id !==  undefined) ? Properties.zaaksysteem.self.id : null);
+			    Attributes.TYPE = ((Properties.zaaksysteem.self.caseType !==  undefined) ? Properties.zaaksysteem.self.caseType : null);
+			    Attributes.ICON = ( Properties.zaaksysteem.self.family.toUpperCase()) ;
+			    Attributes.STATUS = Properties.zaaksysteem.self.status ;
+			    Attributes.FAMILY = Properties.zaaksysteem.self.family ;
+			    Attributes.TITLE = ((Properties.zaaksysteem.self.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.self.caseNumber : Properties.zaaksysteem.self.title);
+			    Attributes.SUBTITLE = ((Properties.zaaksysteem.self.subtitle !==  undefined) ? Properties.zaaksysteem.self.subtitle : null);
+			    Attributes.URL = host+((Properties.zaaksysteem.self.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.self.caseNumber : ((Properties.zaaksysteem.self.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.self.id);
+			    Attributes.ASSIGNEE = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.assignee :  null);
+			    Attributes.REQUESTOR = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.requestor :  null);
+			    Attributes.LOCATION_DESCRIPTION = ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null);
+                Attributes.ORIGIN = ( SelfInd ? ((Properties.zaaksysteem.origin.custom_field_label !==  undefined) ? Properties.zaaksysteem.origin.custom_field_label : null) : (["case", "object"].includes(Properties.zaaksysteem.origin.family) ? ((Properties.zaaksysteem.origin.caseType !==  undefined) ? Properties.zaaksysteem.origin.caseType : Properties.zaaksysteem.origin.Type) + ' - ' + Properties.zaaksysteem.origin.title : 'Betrokkene')) ;
+                //Attributes.ORIGIN = ( SelfInd ? ((Properties.zaaksysteem.origin.custom_field_label !==  undefined) ? Properties.zaaksysteem.origin.custom_field_label : null) : (["case", "object"].includes(Properties.zaaksysteem.origin.family) ? Properties.zaaksysteem.origin.type + ' - ' + Properties.zaaksysteem.origin.title : 'Betrokkene')) ;
+                Attributes.WF_LABEL = ((Properties.zaaksysteem.self.family ===  'case') ? Properties.zaaksysteem.self.caseNumber : null);
+				Attributes.BADGE = ((Properties.zaaksysteem.self.family ===  'case') ? ((["new", "open"].includes(Attributes.STATUS)) ? Properties.zaaksysteem.self.deadline : Attributes.STATUS === 'resolved' ? 'AFGEHANDELD' : 'OPGESCHORT') : null);
+                Attributes.BADGE_COLOR = ((Properties.zaaksysteem.self.family ===  'case') ? ((["new", "open"].includes(Attributes.STATUS)) ? (Number(Properties.zaaksysteem.self.deadline) >= 0 ? 'green' : 'red') : Attributes.STATUS === 'resolved' ? 'black' : 'grey') : null);
+                Attributes.POP_DISPLAY_ASSIGNEE = ((Attributes.ASSIGNEE === null) ? 'none' : 'flex');
+			    Attributes.POP_DISPLAY_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
+                Attributes.POP_DISPLAY_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
+                Attributes.POP_DISPLAY_TYPE = ((Attributes.TYPE === null) ? 'none' : 'flex');
+                Attributes.POP_DISPLAY_ORIGIN = ((Attributes.ORIGIN === null) ? 'none' : 'flex');
+			    Attributes.POP_DISPLAY_DETAILS = ((Attributes.ASSIGNEE === null && Attributes.REQUESTOR === null && Attributes.LOCATION_DESCRIPTION === null && Attributes.TYPE === null) ? 'none' : 'block');
+                Attributes.POP_DISPLAY_BADGE = ((Attributes.BADGE === null) ? 'none' : 'block');
+			    Attributes.TYPE_LABEL = 'Type';
+			    Attributes.REND_VALUE = ( (["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.family : 'subject' );
+			    Attributes.SELF_IND = ( (["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.family : 'subject' );
+		      } else if ( ["CaseMap", "ObjectMap", "SubjectMap"].includes(config.context.type) ) {
+		        //Indicatie voor als het een kenmerk van het betreffende object/zaak betreft
+				//console.log('CaseMap/ObjectMap Properties worden geladen');
+		        var SelfInd = ((config.context.data.object !==  undefined) ? (config.context.data.object.versionIndependentUuid === Properties.zaaksysteem.origin.identifier) : (config.context.data.case.number.toString() === Properties.zaaksysteem.origin.title));
+		        //console.log('selfind '+Properties.zaaksysteem.origin.family+':'+SelfInd+' number:'+config.context.data.case.number+' title:'+Properties.zaaksysteem.origin.title);
+			    Attributes.ID = Properties.zaaksysteem.origin.identifier ;
+			    Attributes.TYPE = ( !SelfInd ? ((["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.type : 'Betrokkene') : null);
+			    Attributes.ICON = ( SelfInd ? 'MARKER' : Properties.zaaksysteem.origin.family.toUpperCase()) ;
+			    Attributes.STATUS = Properties.zaaksysteem.origin.status ;
+			    Attributes.FAMILY = Properties.zaaksysteem.origin.family ;
+			    Attributes.TITLE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? 'Zaak ' + Properties.zaaksysteem.origin.title : ((Properties.zaaksysteem.origin.family === 'object') ? Properties.zaaksysteem.origin.title : Properties.zaaksysteem.origin.name)) : Properties.zaaksysteem.origin.custom_field_label );
+			    Attributes.SUBTITLE = ( !SelfInd ? ((Properties.zaaksysteem.origin.subtitle !==  undefined) ? Properties.zaaksysteem.origin.subtitle : ((Properties.zaaksysteem.origin.address !==  undefined) ? Properties.zaaksysteem.origin.address : null)) : ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) ) ;
+			    Attributes.URL = host+((Properties.zaaksysteem.origin.family ===  'case') ? '/intern/zaak/' + Properties.zaaksysteem.origin.title : ((Properties.zaaksysteem.origin.family ===  'object') ? '/main/object/' : '/redirect/contact_page?uuid=') + Properties.zaaksysteem.origin.identifier) ;
+			    Attributes.ASSIGNEE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.assignee :  null) : null );
+			    Attributes.REQUESTOR = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? Properties.zaaksysteem.origin.requestor :  null) : null ) ;
+			    Attributes.LOCATION_DESCRIPTION = ( !SelfInd ? ((Properties.zaaksysteem.origin.location_description !==  undefined) ? Properties.zaaksysteem.origin.location_description : null) : null) ;
+                Attributes.ORIGIN = ((!SelfInd && ["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.custom_field_label : null);
+                Attributes.WF_LABEL = ( SelfInd ? ((Properties.zaaksysteem.origin.custom_field_label !== undefined) ? Properties.zaaksysteem.origin.custom_field_label + '\r\n' : '') : Attributes.TITLE + '\r\n') + ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : '');
+				Attributes.BADGE = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? ((["new", "open"].includes(Attributes.STATUS)) ? Properties.zaaksysteem.origin.deadline : Attributes.STATUS === 'resolved' ? 'AFGEHANDELD' : 'OPGESCHORT') : null) : null);
+                Attributes.BADGE_COLOR = ( !SelfInd ? ((Properties.zaaksysteem.origin.family ===  'case') ? ((["new", "open"].includes(Attributes.STATUS)) ? (Number(Properties.zaaksysteem.origin.deadline) >= 0 ? 'green' : 'red') : Attributes.STATUS === 'resolved' ? 'black' : 'grey') : null) : null);
+                Attributes.POP_DISPLAY_ASSIGNEE = ((Attributes.ASSIGNEE === null) ? 'none' : 'flex');
+			    Attributes.POP_DISPLAY_REQUESTOR = ((Attributes.REQUESTOR === null) ? 'none' : 'flex');
+                Attributes.POP_DISPLAY_LOCATION_DESCRIPTION = ((Attributes.LOCATION_DESCRIPTION === null) ? 'none' : 'flex');
+                Attributes.POP_DISPLAY_TYPE = ((Attributes.TYPE === null) ? 'none' : 'flex');
+                Attributes.POP_DISPLAY_ORIGIN = ((Attributes.ORIGIN === null) ? 'none' : 'flex');
+			    Attributes.POP_DISPLAY_DETAILS = ((Attributes.ASSIGNEE === null && Attributes.REQUESTOR === null && Attributes.LOCATION_DESCRIPTION === null && Attributes.TYPE === null) ? 'none' : 'block');
+                Attributes.POP_DISPLAY_BADGE = ((Attributes.BADGE === null) ? 'none' : 'block');
+			    Attributes.TYPE_LABEL = 'Betreft';
+			    Attributes.REND_VALUE = Attributes.REND_VALUE = ( (["case", "object"].includes(Properties.zaaksysteem.origin.family)) ? Properties.zaaksysteem.origin.family : 'subject' );
+			    Attributes.SELF_IND = SelfInd;
+		      } else {
+			    Attributes.WF_LABEL = ((Properties.WF_LABEL !== undefined) ? Properties.WF_LABEL : null) ;
+				Attributes.SELF_IND = true;
+				//console.log('Alleen label properties wordt geladen');
+			  }
+			}
+			catch(err) {
+              console.log('Error Attributes: '+err);
+            }
+		  }
+		  console.log('Attributes: '+JSON.stringify(Attributes));
+   	      return Attributes;
+		}
+
+		///////////////////////////// EN NOG WAT GRAFISCHE DINGEN ////////////////////////////////////
+		
+		//kruis ipv pointer op de map
+		document.getElementById("map-container").style.cursor = "crosshair";
+		
+		//zorgen voor labelform bij editen geometrie
+		view.ui.add(document.getElementById("labelform"), "bottom-left");
+        const graghiclabel = document.getElementById("GraphicLabel");
+        graghiclabel.addEventListener("onchange", featureChange);		
+	 
+  	  });
+	  
+	  //done();
+	};
+	  
+	new Promise(loadZsConfig).then(() => {
+	  console.log(IntegrationVersion);
+	  createMap();
+    });	  
+
+    </script>
+  </head>
+  <body>
+    <div id="map-container"></div>
+	
+	<!-- form for editing label --> 
+	<div id="labelform" class="esri-widget esri-hidden">
+      <label for="GraphicLabel">Label</label><br>
+      <input type="text" id="GraphicLabel" name="GraphicLabel">
+    </div>
+  </body>
+</html>
