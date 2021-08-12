@@ -159,7 +159,8 @@
         esriId
           .checkSignInStatus(info.portalUrl + "/sharing")
           .then(() => {
-            displayItems();
+		    console.log('Nog niet ingelogd');
+            //displayItems();
           })
           .catch(() => {
             // Anonymous view
