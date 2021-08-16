@@ -153,7 +153,7 @@
 		  
           // Uncomment the next line to prevent the user's signed in state from being shared with other apps on the same domain with the same authNamespace value.
           // authNamespace: "portal_oauth_inline",
-          popup: false
+          popup: true
         });
 		console.log('Voor registratie');
         esriId.registerOAuthInfos([info]);
@@ -180,13 +180,14 @@
 		//} else {
 		  map = new WebMap({
               portalItem: {
-                id: "cdb2edb3a5c748d585f3f58efefe3150",
+                id: "28cad4ab8fb84b2092aaca49ca21d3c2",
 			
 			//28cad4ab8fb84b2092aaca49ca21d3c2 - productie legger zonder inlog
 			//6a461d9ee96e4bb391b089ded585ac9b - test informatieborden
 			//e81a21ea2dc94704881f2fc511e221dd - productie rayongebieden
 			//d2e124c73991483a96e8ef54144ef317 - test ZaaksysteemNL
 			//e81a21ea2dc94704881f2fc511e221dd - productie rayongebieden zonder inlog
+			//cdb2edb3a5c748d585f3f58efefe3150 - test zaakwebmap
               portal: {
                 url: "https://gistest.wetterskipfryslan.nl/portal",
 			    authMode: "auto",
