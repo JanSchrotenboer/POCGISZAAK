@@ -146,13 +146,14 @@
         const info = new OAuthInfo({
           // Swap this ID out with registered application ID
           //
-		  //appId: "arcgisonline",
-		  appId: "PGuBSPHxiTlEJ0c0",
+		  appId: "arcgisonline",
+		  //appId: "PGuBSPHxiTlEJ0c0",
           // Uncomment the next line and update if using your own portal
           portalUrl: "https://gistest.wetterskipfryslan.nl/portal",
+		  
           // Uncomment the next line to prevent the user's signed in state from being shared with other apps on the same domain with the same authNamespace value.
           // authNamespace: "portal_oauth_inline",
-          popup: false
+          popup: true
         });
 		console.log('Voor registratie');
         esriId.registerOAuthInfos([info]);
@@ -175,9 +176,9 @@
 
         
 		//if (config.wmsLayers.length === 0) {
-		  map = new Map({ basemap: "topo-vector"});
+		 // map = new Map({ basemap: "topo-vector"});
 		//} else {
-		/*  map = new WebMap({
+		  map = new WebMap({
               portalItem: {
                 id: "cdb2edb3a5c748d585f3f58efefe3150",
 			
@@ -193,7 +194,7 @@
 			    canSignInArcGIS: false   
 	          }
             } 
-		  })*/
+		  })
 		//}
 		
 		//////////////////////////////////// TONEN KAART ////////////////////////////////////////////////
