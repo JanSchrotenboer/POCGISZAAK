@@ -158,8 +158,10 @@
 		console.log('Voor registratie');
         esriId.registerOAuthInfos([info]);
 		console.log('Na registratie');
+		
+		esriId.getCredential(info.portalUrl + "/sharing");
 
-        esriId
+        /*esriId
           .checkSignInStatus(info.portalUrl + "/sharing")
           .then(() => {
 		    console.log('Nog niet ingelogd');
@@ -170,7 +172,7 @@
 			console.log('Ingelogd');
             //anonPanelElement.style.display = "block";
             //personalPanelElement.style.display = "none";
-          });		
+          });		*/
 
 		//////////////////////////////////// WEBMAP / BASEMAP ///////////////////////////////////////////
 
