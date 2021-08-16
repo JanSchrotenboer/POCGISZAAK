@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.18/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.18/"></script>
+	<script src="https://unpkg.com/terraformer@1.0.9"></script>
+    <script src="https://unpkg.com/terraformer-arcgis-parser@1.0.5"></script>
+
+    <style>
+      html, body, #map-container { padding: 0; margin: 0; height: 100%; width: 100%; }
+	  .esri-sketch__section { padding: 0; margin: 0; }
+	  .esri-sketch__feature-count-badge { margin-left: 4px; margin-top: 2px;}  
+	  .esri-sketch__tool-section { border-right: none; }
+      .esri-sketch__section { padding: none; margin: none; }
+	  .esri-sketch__button.esri-icon-undo, .esri-sketch__button.esri-icon-redo { display:none; }
+	  #labelform { padding: 4px;}
+	  .esri-layer-list__item--has-children>.esri-layer-list__list { padding: 0 0 0 15px; }
+	  .esri-layer-list__item--has-children>.esri-layer-list__item-container { padding-left: 4px; }
+	  .esri-layer-list__item-container { border-left: 0px; padding: 4px 4px 0 4px; }
+	  .esri-layer-list__list { margin: 0px; }
+	  .esri-layer-list { padding: 4px;}  
+      .esri-layer-list__item { margin: 0px; border-bottom: 0px; }
+	  .esri-feature__content-element { padding: 0px; }
+	  
+	  .esri-view-width-less-than-medium .esri-popup__main-container { width: auto; max-width: 100%; min-width: 70%;} [class*="esri-popup--is-docked-bottom-"] .esri-popup__content ~ .esri-popup__footer, [class*="esri-popup--aligned-top-"] .esri-popup__content ~ .esri-popup__footer { margin: 0px -9px 0px 0px;}
+	  .esri-popup__header-buttons { padding: 0px; }
+	  .esri-popup--is-docked .esri-popup__header { padding-top: 0px; }
+	  .esri-popup__content { margin: 0 6px 6px; }
+      .esri-popup__button { margin: 0px; }	  
+      .esri-popup__footer { margin-top: 0px -9px 0px 0px; padding: 0px 0px 6px 0px; }
+      .esri-popup__header-title { padding: 0px; text-align: left; white-space: normal;}
+	  .esri-widget__table tr th {width: 25%; border-right: 0px; }
+	  .esri-widget {line-height: 1em;}
+	  
+	  .wf-pu-status-badge {float: right; font-size: 9px; padding: 1px 4px; border-radius: 6px; margin-left: 1px; font-weight: 400; color: #fff; height: 14px; margin-top: -1px;}
+    
+    </style>
+    <script>
+	
+	let WFPointSymbol = { type: "simple-marker", style: "circle", color: "red",  size: "11px",  outline: {  color: "red", width: 2 }};
+	let WFFillSymbol = { type: "simple-fill",  color: [ 255,255, 255, 0.7 ], style: "solid", outline: {  color: "red",  width: 2 }};
+	let WFLineSymbol = { type: "simple-line",  color: "red", width: 2, style: "solid"};
+    let WFEmptySymbol = { type: "simple-marker", size: 0};
+	let WFBaseColorCase = [0, 168, 230, 1];
+	let WFBaseColorObject = [123, 193, 57, 1];
+	let WFBaseColorSubject = [193, 0, 193, 1];
+	let labelClass = { symbol: { type: "text", color: "black", haloColor: "white", haloSize: "2px", font: { size: 10}}, minScale: 200000, labelExpressionInfo: { expression: "$feature.WF_LABEL" },horizontalAlignment: "left"};
+	let map;
+    let config;
+    let name;
+	let host;
+	let MessageVersion = 5;
+	let IntegrationVersion = 'Wetterskip Fryslan Integration version: 6.6';
+	
+	//////////////////////////////////// WEBMAP / BASEMAP ///////////////////////////////////////////
+	
+	const loadZsConfig = done => {
+	  window.addEventListener('message', event => {
+        if (event.data.type === 'init') {
+          config = event.data.value;
+          name = event.data.name;
+		  host = event.origin;
+		  console.log('Init: '+JSON.stringify(event.data));
+          done();
+        }
+      })
+    }
+
+    //////////////////////////////////// KAARTAPP LADEN ///////////////////////////////////////////
+    const createMap = () => {
+
+      require([
+      "esri/widgets/Sketch", 
+	  "esri/widgets/Sketch/SketchViewModel",
+      "esri/Map",
+	  "esri/WebMap",
+      "esri/layers/GraphicsLayer",
+	  "esri/layers/FeatureLayer",
+      "esri/views/MapView",
+	  "esri/views/draw/Draw",
+	  "esri/Graphic",
+	  "esri/geometry/SpatialReference",
+	  "esri/geometry/projection",
+	  "esri/widgets/Fullscreen",
+	  "esri/widgets/LayerList",
+	  "esri/widgets/Expand",
+	  "esri/widgets/Search",
+	  "esri/core/watchUtils",
+	  "esri/identity/OAuthInfo",
+      "esri/identity/IdentityManager"//,
+	  //"esri/config"
+      ], 
+	  function( 
+	  Sketch, 
+	  SketchViewModel, 
+	  Map, 
+	  WebMap,
+	  GraphicsLayer,
+	  FeatureLayer,
+	  MapView, 
+	  Draw,
+	  Graphic,
+	  SpatialReference,
+	  projection,
+	  Fullscreen,
+	  LayerList,
+	  Expand,
+	  Search,
+	  watchUtils,
+	  OAuthInfo, 
+	  esriId//,
+	  //esriConfig
+	  ) {
+	    var sketchViewModel;
+        var sketch;
+		var fullscreen;
+        var graphicsLayer;	
+		var LayerLabels;
+        var GraphicsPunt = [];
+		var GraphicsLijn = [];
+		var GraphicsVlak = [];
+		var GraphicsZoom = [];	
+		var LayerZaakLijn;
+		var LayerZaakVlak;
+		var LayerZaakPunt;
+		var RendererValuesPunt = [];
+		var RendererValuesVlak = [];
+		var RendererValuesLijn = [];
+        var GeoJsonFeatures = [];	
+        var expandKaartlagen;
+		var expandAdresZoeken;
+		var geowebBtn;
+		var ActionButtons = { Adres : false, Kaartlagen : false, Geoweb : false }; 
+		var map;
+
+		//////////////////////////////////// AUTHENTICATIE ///////////////////////////////////////////
+		
+        const info = new OAuthInfo({
+          // Swap this ID out with registered application ID
+          //
+		  //appId: "arcgisonline",
+		  appId: "PGuBSPHxiTlEJ0c0",
+          // Uncomment the next line and update if using your own portal
+          portalUrl: "https://gistest.wetterskipfryslan.nl/portal",
+          // Uncomment the next line to prevent the user's signed in state from being shared with other apps on the same domain with the same authNamespace value.
+          // authNamespace: "portal_oauth_inline",
+          popup: false
+        });
+		console.log('Voor registratie');
+        esriId.registerOAuthInfos([info]);
+		console.log('Na registratie');
+
+        esriId
+          .checkSignInStatus(info.portalUrl + "/sharing")
+          .then(() => {
+		    console.log('Nog niet ingelogd');
+            //displayItems();
+          })
+          .catch(() => {
+            // Anonymous view
+			console.log('Ingelogd');
+            //anonPanelElement.style.display = "block";
+            //personalPanelElement.style.display = "none";
+          });		
+
+		//////////////////////////////////// WEBMAP / BASEMAP ///////////////////////////////////////////
+
+        
+		//if (config.wmsLayers.length === 0) {
+		  map = new Map({ basemap: "topo-vector"});
+		//} else {
+		/*  map = new WebMap({
+              portalItem: {
+                id: "cdb2edb3a5c748d585f3f58efefe3150",
+			
+			//28cad4ab8fb84b2092aaca49ca21d3c2 - productie legger zonder inlog
+			//6a461d9ee96e4bb391b089ded585ac9b - test informatieborden
+			//e81a21ea2dc94704881f2fc511e221dd - productie rayongebieden
+			//d2e124c73991483a96e8ef54144ef317 - test ZaaksysteemNL
+			//e81a21ea2dc94704881f2fc511e221dd - productie rayongebieden zonder inlog
+              portal: {
+                url: "https://gistest.wetterskipfryslan.nl/portal",
+			    authMode: "auto",
+			    canSignInIDP: true,
+			    canSignInArcGIS: false   
+	          }
+            } 
+		  })*/
+		//}
+		
+		//////////////////////////////////// TONEN KAART ////////////////////////////////////////////////
+
+        const view = new MapView({
+          container: "map-container",
+          map: map,
+		  center: [5.9, 53.1],
+          zoom: 4,
+		  constraints: { maxZoom: 14 }, // anders problemen met tegels
+		  popup: {
+            dockEnabled: true,
+			collapseEnabled: false,
+			dockOptions: {
+              // Disables the dock button from the popup
+              buttonEnabled: false,
+              // Ignore the default sizes that trigger responsive docking
+              breakpoint: false,
+			  //
+			  position: 'bottom-left'
+            }
+          }
+        });
+		
+
+  	  });
+	  
+	  //done();
+	};
+	  
+	new Promise(loadZsConfig).then(() => {
+	  console.log(IntegrationVersion);
+	  createMap();
+    });	  
+
+    </script>
+  </head>
+  <body>
+    <div id="map-container"></div>
+	
+	<!-- form for editing label --> 
+	<div id="labelform" class="esri-widget esri-hidden">
+      <label for="GraphicLabel">Label</label><br>
+      <input type="text" id="GraphicLabel" name="GraphicLabel">
+    </div>
+  </body>
+</html>
