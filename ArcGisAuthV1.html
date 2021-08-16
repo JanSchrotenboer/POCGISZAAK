@@ -161,18 +161,16 @@
 		
 		//esriId.getCredential(info.portalUrl + "/sharing");
 
-        /*esriId
+        esriId
           .checkSignInStatus(info.portalUrl + "/sharing")
-          .then(() => {
-		    console.log('Nog niet ingelogd');
-            //displayItems();
+          .then( function (ev) {
+                    console.log(ev);
+                    console.log("logged in ");
           })
-          .catch(() => {
-            // Anonymous view
-			console.log('Ingelogd');
-            //anonPanelElement.style.display = "block";
-            //personalPanelElement.style.display = "none";
-          });		*/
+          .catch(function (er) {
+                    console.log(err)
+                });
+          });		
 
 		//////////////////////////////////// WEBMAP / BASEMAP ///////////////////////////////////////////
 
