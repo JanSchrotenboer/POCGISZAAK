@@ -243,8 +243,9 @@
 		          createMap();
               }
             });
-		  	//alert(window.location.origin);
-		      window.open(window.location.origin+"/widgetswf/Zaaksysteem/oauth2-login.html?appid="+config.appId+"&portalurl="+config.portalUrl,"_blank","rel=opener");
+		  	  //alert(window.location.pathname.slice(0, window.location.pathname.lastIndexOf('/')));
+			  window.open(window.location.origin+"/widgetswf/Zaaksysteem/oauth2-login.html?appid="+config.appId+"&portalurl="+config.portalUrl,"_blank","rel=opener");
+		      //window.open(window.location.origin+window.location.pathname.slice(0, window.location.pathname.lastIndexOf('/'))+"/oauth2-login.html?appid="+config.appId+"&portalurl="+config.portalUrl,"_blank","rel=opener");
 		    });
         } else if (config.webMapId && config.context.type !== 'WebformFormField') {
 		    // zonder inlog connectie opzetten met portal voor webmap
