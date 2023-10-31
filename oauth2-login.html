@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1,user-scalable=no" />
+    <title>Oauth Login</title>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css" />
+
+    <script src="https://js.arcgis.com/4.27/"></script>
+    <style>
+      html, body{padding: 0; margin: 0;height: 100%;width: 100%;}
+    </style>
+    <script>
+	  pageParams = new Map(location.search.slice(1).split('&').map(kv => kv.split('=')));
+	  console.log(pageParams);
+
+      require([
+        "esri/identity/OAuthInfo",
+        "esri/identity/IdentityManager",
+		"esri/config"
+      ], (OAuthInfo, esriId, esriConfig) => {
+        
+		esriConfig.portalUrl = pageParams.get('portalurl');
+
+        const info = new OAuthInfo({
+          appId: pageParams.get('appid'),
+          portalUrl: pageParams.get('portalurl'),
+          flowType: "auto", // default that uses two-step flow
+          popup: false
+        });
+
+        esriId.registerOAuthInfos([info]);
+
+        esriId
+          .checkSignInStatus(info.portalUrl + "/sharing")
+          .then(() => {
+            console.log('Al ingelogd, direct sluiten');
+			LoginReady()
+          })
+          .catch(() => {
+            loginOauth();
+          });
+        
+        function loginOauth() {
+          esriId.getCredential((info.portalUrl + "/sharing"), {
+            oAuthPopupConfirmation: false
+          }).then(function() {
+			LoginReady()
+          });
+        };
+     });
+
+     function LoginReady() {
+	   // Eerst nog even token kopieren
+       let OAuthKey = sessionStorage.getItem('esriJSAPIOAuth');
+       if (OAuthKey && OAuthKey !== '{"\/":{}}'){
+		  localStorage.setItem('esriJSAPIOAuth', OAuthKey);
+		  console.log('esriJSAPIOAuth', OAuthKey);
+        } else {
+		  console.log('esriJSAPIOAuth niet gevonden');
+        }	
+        close();		  
+      };  
+	  
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
